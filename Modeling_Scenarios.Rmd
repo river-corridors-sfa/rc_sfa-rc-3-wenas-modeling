@@ -4,6 +4,8 @@ output: html_document
 date: "2022-12-01"
 ---
 
+## Set Up 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -185,3 +187,4 @@ all_outputs_wmeta %>%
         strip.text = element_text(size = 9, color= "black"))+
   theme(strip.background = element_blank())
 ```
+Figures: Plots of functional variables (TSS, NO3) organized by the six different scenario groupings (multiple subplots), with the base case plotted in each for comparison.
