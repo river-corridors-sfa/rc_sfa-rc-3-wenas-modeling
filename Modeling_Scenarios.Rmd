@@ -13,7 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 require(pacman)
 pacman::p_load(tidyverse, # keep things tidy
                googlesheets4, # read_sheet 
-               googledrive) # drive_ functions
+               googledrive,
+               dplyr,
+               ggplot2) # drive_ functions
 
 #double check your wd. should be ../rc_sfa-rc-3-wenas-modeling
 #if not you need to do new relative file pathing
@@ -62,7 +64,7 @@ file.remove(c(files$name))
 
 Base = all_outputs_wmeta %>% 
   filter(ScenarioGroup %in% c("Base Case")) %>%
-  filter(between(dates, as.POSIXct("2020-01-01"), as.POSIXct("2020-12-31"))) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit()
 
 max(Base$nit_mgL_.chg)
@@ -70,7 +72,7 @@ min(Base$nit_mgL_.chg)
 
 areasev = all_outputs_wmeta %>% 
   filter(ScenarioGroup %in% c("Area Burned x Severity"))%>%
-  filter(between(dates, as.POSIXct("2020-01-01"), as.POSIXct("2020-12-31"))) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit()
 
 max(areasev$nit_mgL_.chg)
@@ -92,7 +94,7 @@ Basin Slope
 
 all_outputs_wmeta %>% 
   filter(ScenarioGroup %in% c("Base Case")) %>%
-  filter(between(dates, as.POSIXct("2020-01-01"), as.POSIXct("2020-12-31"))) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit() %>%
   filter(nit_mgL_.chg > 10) %>%
   ggplot(aes(x=nit_mgL_.chg))+
@@ -108,7 +110,7 @@ all_outputs_wmeta %>%
 
 all_outputs_wmeta %>% 
   filter(ScenarioGroup %in% c("Area Burned x Severity")) %>%
-   filter(between(dates, as.POSIXct("2020-01-01"), as.POSIXct("2020-12-31"))) %>%
+   filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit() %>%
    filter(nit_mgL_.chg > 10) %>%
   ggplot(aes(x=nit_mgL_.chg, fill=ShortScenario))+
@@ -125,7 +127,7 @@ all_outputs_wmeta %>%
 
 all_outputs_wmeta %>% 
   filter(ScenarioGroup %in% c("Land Use")) %>%
-   filter(between(dates, as.POSIXct("2020-01-01"), as.POSIXct("2020-12-31"))) %>%
+   filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit() %>%
    filter(nit_mgL_.chg > 10) %>%
   ggplot(aes(x=nit_mgL_.chg, fill=ShortScenario))+
@@ -141,7 +143,7 @@ all_outputs_wmeta %>%
 
 all_outputs_wmeta %>% 
   filter(ScenarioGroup %in% c("Climate")) %>%
-   filter(between(dates, as.POSIXct("2020-01-01"), as.POSIXct("2020-12-31"))) %>%
+   filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit() %>%
    filter(nit_mgL_.chg > 10) %>%
   ggplot(aes(x=nit_mgL_.chg, fill=ShortScenario))+
@@ -157,7 +159,7 @@ all_outputs_wmeta %>%
 
 all_outputs_wmeta %>% 
   filter(ScenarioGroup %in% c("Flow Pathways")) %>%
-   filter(between(dates, as.POSIXct("2020-01-01"), as.POSIXct("2020-12-31"))) %>%
+   filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit() %>%
    filter(nit_mgL_.chg > 10) %>%
   ggplot(aes(x=nit_mgL_.chg, fill=ShortScenario))+
@@ -173,7 +175,7 @@ all_outputs_wmeta %>%
 
 all_outputs_wmeta %>% 
   filter(ScenarioGroup %in% c("Basin Slope")) %>%
-   filter(between(dates, as.POSIXct("2020-01-01"), as.POSIXct("2020-12-31"))) %>%
+   filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit() %>%
    filter(nit_mgL_.chg > 10) %>%
   ggplot(aes(x=nit_mgL_.chg, fill=ShortScenario))+
@@ -187,4 +189,111 @@ all_outputs_wmeta %>%
         strip.text = element_text(size = 9, color= "black"))+
   theme(strip.background = element_blank())
 ```
+
+
 Figures: Plots of functional variables (TSS, NO3) organized by the six different scenario groupings (multiple subplots), with the base case plotted in each for comparison.
+
+Model Run 2014-2020
+Fire Start: 2019-08-31 
+
+```{r timeseries, echo=FALSE}
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Base Case")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot()+
+  geom_point(aes(x= dates, y=nit_mgL_.chg))+
+  geom_line(aes(x= dates, y=flow_m3s_fire*10), color='red')+
+  geom_line(aes(x= dates, y=flow_m3s_nofire*10), color='blue')+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="none", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Area Burned x Severity")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot(aes(x= dates, y=nit_mgL_.chg, color=ShortScenario))+
+  geom_point()+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Land Use")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot(aes(x= dates, y=nit_mgL_.chg, color=ShortScenario))+
+  geom_point()+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Climate")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot(aes(x= dates, y=nit_mgL_.chg, color=ShortScenario))+
+  geom_point()+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Flow Pathways")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot()+
+  geom_line(aes(x= dates, y=flow_m3s_fire/100), color='red')+
+  geom_line(aes(x= dates, y=flow_m3s_nofire/100), color='blue')+
+  geom_point(aes(x= dates, y=sed_mgL_.chg, color=ShortScenario))+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Basin Slope")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot(aes(x= dates, y=nit_mgL_.chg, color=ShortScenario))+
+  geom_point()+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+```
+Plot that shows flow, precip for base and dry and wet years - highlight events (color code blocks?)
+
+To do:
+- Discuss % change in datasets with Katie 
+- Calculate absolute change in parameters (Fire-Base)
