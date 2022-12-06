@@ -265,9 +265,9 @@ all_outputs_wmeta %>%
   filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit() %>%
   ggplot()+
-  geom_line(aes(x= dates, y=flow_m3s_fire/100), color='red')+
-  geom_line(aes(x= dates, y=flow_m3s_nofire/100), color='blue')+
-  geom_point(aes(x= dates, y=sed_mgL_.chg, color=ShortScenario))+
+  geom_line(aes(x= dates, y=flow_m3s_fire), color='red')+
+  geom_line(aes(x= dates, y=flow_m3s_nofire), color='blue')+
+  geom_point(aes(x= dates, y=nit_mgL_.chg, color=ShortScenario))+
   theme_classic()+
   labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
   theme(legend.position="right", 
@@ -282,11 +282,11 @@ all_outputs_wmeta %>%
   filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit() %>%
   ggplot()+
-  geom_line(aes(x= dates, y=flow_m3s_fire/100), color='red')+
-  geom_line(aes(x= dates, y=flow_m3s_nofire/100), color='blue')+
-  geom_point(aes(x= dates, y=sed_mgL_.chg, color=ShortScenario))+
+  geom_line(aes(x= dates, y=flow_m3s_fire), color='red')+
+  geom_line(aes(x= dates, y=flow_m3s_nofire), color='blue')+
+  geom_point(aes(x= dates, y=sed_mgL_nofire, color=ShortScenario))+
   theme_classic()+
-  labs(x = "date", y = "% Change in TSS from Base Unburnt Condition")+
+  labs(x = "date", y = "TSS mg/L Base Unburnt Condition")+
   theme(legend.position="right", 
         plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
                                                                      color="black"),
