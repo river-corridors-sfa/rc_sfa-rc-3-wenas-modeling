@@ -86,8 +86,12 @@ min(areasev$nit_mgL_.chg)
 # separate out area & severity in the short scenario column so that we can isolate the scenarios a bit better 
 
 all_outputs_wmeta_scenarios = all_outputs_wmeta %>% 
-  mutate(SeverityGroup = stringr::str_extract(ShortScenario, c("high"|"low"|"moderate")),
-         AreaGroup = ) ### COME BACK HERE AND FIX 
+  mutate(SeverityGroup = stringr::str_extract(ShortScenario, "high|low|moderate"),
+         AreaGroup = stringr::str_extract(ShortScenario, "\\d+"),
+         SeverityGroup = case_when(is.na(SeverityGroup) ~ "base",
+                                   TRUE ~ SeverityGroup),
+         AreaGroup = case_when(is.na(AreaGroup) ~ "33",
+                                   TRUE ~ AreaGroup))
 
 # Calculate absolute change in parameters (Fire-Base)
 
