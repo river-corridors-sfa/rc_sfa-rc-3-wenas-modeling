@@ -86,12 +86,13 @@ min(areasev$nit_mgL_.chg)
 # separate out area & severity in the short scenario column so that we can isolate the scenarios a bit better 
 
 all_outputs_wmeta_scenarios = all_outputs_wmeta %>% 
-  mutate(SeverityGroup = stringr::str_extract(ShortScenario, "high|low|moderate"),
+  mutate(SeverityGroup = stringr::str_extract(ShortScenario, "high|low|mod"),
          AreaGroup = stringr::str_extract(ShortScenario, "\\d+"),
          SeverityGroup = case_when(is.na(SeverityGroup) ~ "base",
                                    TRUE ~ SeverityGroup),
          AreaGroup = case_when(is.na(AreaGroup) ~ "33",
-                                   TRUE ~ AreaGroup))
+                                   TRUE ~ AreaGroup),
+         AreaGroup = as.numeric(AreaGroup))
 
 # Calculate absolute change in parameters (Fire-Base)
 
@@ -351,12 +352,29 @@ all_outputs_wmeta %>%
         strip.text = element_text(size = 9, color= "black"))+
   theme(strip.background = element_blank())
 
-all_outputs_wmeta %>% 
+all_outputs_wmeta_scenarios %>% 
   filter(ScenarioGroup %in% c("Area Burned x Severity")) %>%
+  filter(AreaGroup %in% c("10","15","20","25","30")) %>%
   filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
   na.omit() %>%
-  ggplot(aes(x= dates, y=nit_mgL_fire, color=ShortScenario))+
-  geom_point()+
+  ggplot(aes(x= dates, y=nit_mgL_fire, color=SeverityGroup))+
+  geom_line()+
+  theme_classic()+
+  labs(x = "date", y = "Nitrate mg/L")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta_scenarios %>% 
+  filter(ScenarioGroup %in% c("Area Burned x Severity")) %>%
+  filter(AreaGroup %in% c("10","15","20","25","30")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot(aes(x= dates, y=nit_mgL_fire, color=SeverityGroup))+
+  geom_line()+
   theme_classic()+
   labs(x = "date", y = "Nitrate mg/L")+
   theme(legend.position="right", 
