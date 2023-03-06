@@ -44,7 +44,7 @@ files <- drive_ls(directory) %>%
 ## Download files to local (don't worry, we'll delete em in a sec)
 lapply(files$name, drive_download, overwrite = TRUE)
 
-## Read in data, filter to EC1 samples, and add sample name
+## Read in data
 all_outputs <- files$name %>% 
   map(read_data) %>% 
   bind_rows()
@@ -78,6 +78,22 @@ areasev = all_outputs_wmeta %>%
 max(areasev$nit_mgL_.chg)
 min(areasev$nit_mgL_.chg)
 ```
+
+# Getting dataframe ready for plotting 
+
+```{r data manipulations, echo=FALSE}
+
+# separate out area & severity in the short scenario column so that we can isolate the scenarios a bit better 
+
+all_outputs_wmeta_scenarios = all_outputs_wmeta %>% 
+  mutate(SeverityGroup = stringr::str_extract(ShortScenario, c("high"|"low"|"moderate")),
+         AreaGroup = ) ### COME BACK HERE AND FIX 
+
+# Calculate absolute change in parameters (Fire-Base)
+
+```
+
+
 
 ## Make some prelim plots!
 
@@ -223,6 +239,122 @@ all_outputs_wmeta %>%
   geom_point()+
   theme_classic()+
   labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Land Use")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot(aes(x= dates, y=nit_mgL_.chg, color=ShortScenario))+
+  geom_point()+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Climate")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot(aes(x= dates, y=nit_mgL_.chg, color=ShortScenario))+
+  geom_point()+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Flow Pathways")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot()+
+  geom_line(aes(x= dates, y=flow_m3s_fire), color='red')+
+  geom_line(aes(x= dates, y=flow_m3s_nofire), color='blue')+
+  geom_point(aes(x= dates, y=nit_mgL_.chg, color=ShortScenario))+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Flow Pathways")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot()+
+  geom_line(aes(x= dates, y=flow_m3s_fire), color='red')+
+  geom_line(aes(x= dates, y=flow_m3s_nofire), color='blue')+
+  geom_point(aes(x= dates, y=sed_mgL_nofire, color=ShortScenario))+
+  theme_classic()+
+  labs(x = "date", y = "TSS mg/L Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Basin Slope")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot(aes(x= dates, y=nit_mgL_.chg, color=ShortScenario))+
+  geom_point()+
+  theme_classic()+
+  labs(x = "date", y = "% Change in Nitrate from Base Unburnt Condition")+
+  theme(legend.position="right", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+```
+
+
+```{r timeseries values, echo=FALSE}
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Base Case")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot()+
+  geom_point(aes(x= dates, y=nit_mgL_fire), color='red')+
+  geom_point(aes(x= dates, y=nit_mgL_nofire), color='blue')+
+  #geom_line(aes(x= dates, y=flow_m3s_fire*10), color='red')+
+  #geom_line(aes(x= dates, y=flow_m3s_nofire*10), color='blue')+
+  theme_classic()+
+  labs(x = "date", y = "Nitrate mg/L")+
+  theme(legend.position="none", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Area Burned x Severity")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot(aes(x= dates, y=nit_mgL_fire, color=ShortScenario))+
+  geom_point()+
+  theme_classic()+
+  labs(x = "date", y = "Nitrate mg/L")+
   theme(legend.position="right", 
         plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
                                                                      color="black"),
