@@ -61,6 +61,7 @@ ws_raw <- files %>%
   filter(!grepl("PER_", name)) %>% 
   filter(!grepl("old_swat", name)) %>% #manually remove problem file
   filter(!grepl("nofire|unburned", name)) %>% # remove nofire: not needed and not formatted correctly
+  filter(grepl("unburned", name)) %>% 
   pull(name) %>% 
   map(read_data) %>% 
   bind_rows() %>% 
@@ -100,7 +101,7 @@ plot_grid(make_geom_col_fire("flow") + ylab("Flow (m3/s)"),
           make_geom_col_fire("nitrate") + ylab("Nitrate"), 
           make_geom_col_fire("doc") + ylab("DOC (mg/L)"), 
           ncol = 1)
-ggsave("figures/230330_fire_characteristics_bar_charts.png", width = 6, height = 12)
+ggsave("pr_work/figures/230330_fire_characteristics_bar_charts.png", width = 6, height = 12)
 
 
 flow <- ggplot(df_fires, aes(x = percent, fill = scenario)) + 
@@ -135,13 +136,25 @@ make_geom_col_ws <- function(variable_of_interest){
 colnames(df_ws)
 
 ## For SLP, because names have different #s of things, we need to get creative
-df_ws %>% filter(scenario == "SLP") %>% 
+p1 <- df_ws %>% filter(scenario == "SLP") %>% 
   mutate(sign = ifelse(grepl("neg", SLP), "neg", "pos")) %>% # Create a col for sign
   mutate(SLP = str_remove(SLP, "neg_")) %>% 
-  separate(SLP, c("slope", "fire"), sep = "_")
+  separate(SLP, c("slope", "fire"), sep = "_") %>% 
+  ggplot(aes(slope, flow_mean)) + 
+  geom_col()
 
+p2 <- df_ws %>% filter(ID == "DRY" | ID == "WET") %>% 
+  filter(scenario == "fire") %>% 
+  ggplot(aes(ID, flow_mean)) + 
+  geom_col()
 
-ggplot(df_ws, aes(ID, ))
+p3 <- df_ws %>% filter(ID == "shrub" | ID == "deciduous" | ID == "coniferous" | ID == "grass") %>% 
+  filter(scenario == "fire") %>% 
+  ggplot(aes(ID, flow_mean)) + 
+  geom_col()
+
+plot_grid(p1, p2, p3, rel_widths = c(3, 2, 4), nrow = 1)
+ggsave("pr_work/figures/230406_ws_barcharts.png", width = 10, height = 3)
 
 
 
