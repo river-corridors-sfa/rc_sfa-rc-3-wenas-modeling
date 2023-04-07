@@ -29,6 +29,8 @@ getwd()
 ## Set GDrive URL for files
 directory = "https://drive.google.com/drive/folders/1MtvqmPVif1dLWZbM8ORFvfjQpZohMoS7"
 
+new_directory = "https://drive.google.com/drive/folders/1tl1Kf0PxVHbS7wPL4W071pvS1Af3Ji1i"
+
 read_data <- function(data){
   # First, scrape scenario name from file name
   scenario <- stringr::word(data, sep= fixed(".c"))
@@ -38,11 +40,11 @@ read_data <- function(data){
 }
 
 ## Create a list of files to download
-files <- drive_ls(directory) %>% 
+files <- drive_ls(new_directory) %>% 
   filter(grepl("_results", name))
 
 ## Download files to local (don't worry, we'll delete em in a sec)
-lapply(files$name, drive_download, overwrite = TRUE)
+lapply(files$id, drive_download, overwrite = TRUE)
 
 ## Read in data
 all_outputs <- files$name %>% 
@@ -53,7 +55,7 @@ all_outputs$dates <- as.POSIXct(all_outputs$dates)
 
 key = googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1fM_JKnCXQ9uUFaplQ90YwZevvnrnpSp_R26KsN8tHdM/edit#gid=0", sheet = 1)
 
-all_outputs_wmeta <- full_join(all_outputs, key, by=c("scenario"))
+all_outputs_wmeta <- left_join(all_outputs, key, by=c("scenario"))
 
 ## Clean up local (delete downloaded files)
 file.remove(c(files$name))
@@ -98,6 +100,30 @@ all_outputs_wmeta_scenarios = all_outputs_wmeta %>%
 
 ```
 
+## Plots for Manuscript
+
+```{r plots plots plots, echo=FALSE}
+
+all_outputs_wmeta %>% 
+  filter(ScenarioGroup %in% c("Base Case")) %>%
+  filter(between(dates, as.POSIXct("2019-08-31"), as.POSIXct("2020-12-31"))) %>%
+  na.omit() %>%
+  ggplot()+
+  geom_line(aes(x=dates, y= flow_m3s_fire), color= "red", alpha=0.7)+
+  geom_line(aes(x=dates, y= flow_m3s_nofire), alpha=0.7)+
+  theme_classic()+
+  labs(y = "Flow m3/s", x = "Date")+
+  theme(legend.position="none", 
+        plot.title =  element_text(size=12),axis.text.y=element_text(size=12,
+                                                                     color="black"),
+        axis.title.y=element_text(size=12),
+        strip.text = element_text(size = 9, color= "black"))+
+  theme(strip.background = element_blank())
+
+
+
+
+```
 
 
 ## Make some prelim plots!
