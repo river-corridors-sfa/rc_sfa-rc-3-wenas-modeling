@@ -75,20 +75,19 @@ df_stats <- df_raw %>%
                           TRUE ~"Vegetation")) %>% 
   mutate(source = ifelse(!is.na(slp), slp, source))
 
+## Function to make plots
 create_plot <- function(var, y_label){
   ggplot(df_stats, aes_string("source", var)) + 
-    geom_col() + 
-    facet_wrap(~type, nrow = 1, scales = "free_x") + 
-    labs(x = "Scenario", y = y_label, 
+    geom_col(fill = "lightblue", color = "black") + 
+    facet_grid(~type, scales = "free_x", space = "free") + 
+    labs(x = "", y = y_label, 
          title = str_to_upper(str_remove(var, "diff_")))
 }
 
-create_plot("diff_flow", "Change in flow (%")
-
-ggplot(df_stats, aes(source, diff_flow)) + 
-  geom_col() + 
-  facet_wrap(~type, nrow = 1, scales = "free_x") + 
-  labs(x = "Scenario", y = y_label, title = str_to_upper(str_remove(var, "diff_")))
-  
-
+## Make figure
+plot_grid(create_plot("diff_flow", "Change in flow (%)"), 
+          create_plot("diff_sed", "Change in sediment (%)") + scale_y_log10(), 
+          create_plot("diff_no3", "Change in NO3 (%)"), 
+          ncol = 1, align = "hv")
+ggsave("pr_work/figures/230410_scenario_percent_changes.png", width = 8, height = 9)
 
