@@ -4,11 +4,21 @@
 #step 3: grab a random subbasin (add or remove if connected to burn area based on numbers)
 
 ## can I just figure out which ones are touching the edge and remove / add a random one?
+library(stringr)
+library(readr)
+library(raster)
+library(sf)
+library(dplyr)
 
 #load data 
 data <- read_csv("Z:/1_Research/3_Wenas Creek SWAT/Data/hru_sev_hyunwoo.csv", col_types = cols(hru_gis = col_character()))
 base_sev <- read.csv("Z:/1_Research/3_Wenas Creek SWAT/Data/Parameter Testing/fire_hru_base.txt")
+hru <- st_read("C:/SWAT/Wenas Creek_Hyunwoo/shp_files/hru1.shp")
+hru_areas <- read.csv("Z:/1_Research/3_Wenas Creek SWAT/Data/hyunwoo model/hru_areas.csv")
+
 base_sev$hru_gis  <- str_pad(base_sev$hru_gis, 9, pad="0", side="left")
+hru_areas$hru  <- str_pad(hru_areas$hru, 9, pad="0", side="left")
+
 base_sev <- merge(base_sev, as.data.frame(hru)[,c(1,3)], by.x="hru_gis", by.y="HRU_GIS")
 data <- merge(data, base_sev, by="hru_gis")
 data <- merge(data, hru_areas[,c(1,2,which(colnames(hru_areas)=="area_ha"))], by.x="hru_gis", by.y="hru")
@@ -25,43 +35,51 @@ hru_sev <- data
     theme(legend.position=c(0.8,0.8)) 
   
 burn_basin <- function(hru_sev, perc, hru, name){
-  #get tables
+  #get tables of hru's that are burned or not
   burned <- hru_sev %>% filter(sev != "unburned")
   unburned <- hru_sev %>% filter(sev == "unburned")
-  burn_hru <- hru %>% filter(HRU_ID %in% burned$HRU_ID)
-  unburn_hru <- hru %>% filter(HRU_ID %in% unburned$HRU_ID)
+  burn_hru <- hru %>% filter(HRU_ID %in% burned$hru)
+  unburn_hru <- hru %>% filter(HRU_ID %in% unburned$hru)
   
+  #figure out the starting percent area burned
   perc_start <- sum(na.omit(hru_sev$area_ha[hru_sev$sev != "unburned"])) / sum(hru_sev$area_ha) * 100
-  fire_perc <- perc_start 
+  fire_perc <- perc_start  #saving as a different variable to protect
+  total_area <- sum(hru_sev$area_ha, na.rm=T) #total area 
   
+  #SITUATION 1: Desired percent burned is less than starting percentage 
+    #Need to remove burned basins
   if(perc < fire_perc){
     #figure out approximate number to do in ~10 steps
-    sub_area <- hru_sev %>% group_by(sub) %>% summarise(area_ha = sum(area_ha))
-    avg_area <- median(sub_area$area_ha)
-    area_dif <- (total_area * fire_perc/100) - (total_area * perc/100)
-    sub_num <- area_dif / avg_area 
+    sub_area <- hru_sev %>% group_by(sub) %>% summarise(area_ha = sum(area_ha)) #find area for each subbasin
+    avg_area <- median(sub_area$area_ha) #get average subbasin area
+    area_dif <- (total_area * fire_perc/100) - (total_area * perc/100) #area that needs to be removed from burn
+    sub_num <- area_dif / avg_area #figure out the average number of subbasin to remove
     #samp_num <- round(diff(displease::seq_ease(x1=1, x2=sub_num*1.3, n=10, type='cubic-out')))
     count <- 1
+    #iterates until enough subbasins have been removed
     while(perc < fire_perc){
-      #get overlap 
-      check <- st_intersects(burn_hru, unburn_hru)
-      burn_rm <- burn_hru[lengths(check)!=0,]
+      #finds hru's that overlap with unburned area so it doesn't pull out a HRU from the middle
+      check <- st_intersects(burn_hru, unburn_hru)  
+      burn_rm <- burn_hru[lengths(check)!=0,] #removes HRU's which are surrounded by burned areas
       burn_rm$overlap <- lengths(check)[lengths(check)!=0]
+      #orders from the most overlap to the littlest
       burn_rm <- as.data.frame(burn_rm)
-      burn_rm <- burn_rm[,-5]
+      burn_rm <- burn_rm[,-4]
       burn_rm <- burn_rm[order(burn_rm$overlap, decreasing=T),]
       
-      burn_rm <- merge(burn_rm, hru_sev[,c(5,6)], by="HRU_ID")
+      #group amount of overlap by subbasin
+      burn_rm <- merge(burn_rm, hru_sev[,c(5,6)], by="OBJECTID")
       subs <- burn_rm %>% group_by(sub) %>% summarise(count=n())
-      subs <- subs[order(subs$count, decreasing=F),]
+      subs <- subs[order(subs$count, decreasing=T),]
       
+      #chooses a few potential subbasins to remove
       area_dif <- (total_area * fire_perc/100) - (total_area * perc/100)
       sub_num <- area_dif / avg_area  
       samp <- ifelse(ceiling(sub_num *.2) < 1, 1, ceiling(sub_num *.2))
+      set.seed(9)
       subs_semi_rd <- subs[(1:round(samp*2)),] #gives some range to not always pick one with least
       
       #choose random overlapping hru (if far from percentage choose more)
-      set.seed(9)
       
       #hru_rm <- burn_rm$HRU_ID[(1:samp)]
       #hru_rm <- sample(burn_rm$HRU_ID,samp)
@@ -105,7 +123,6 @@ burn_basin <- function(hru_sev, perc, name){
     unburned <- hru_sev %>% filter(sev == "unburned")
     unburned <- unburned[order(unburned$dnbr, decreasing = T),]
     
-    total_area <- sum(hru_sev$area_ha, na.rm=T) #total area 
     fire_perc <- perc_start 
     
     #get subbasin severity 
