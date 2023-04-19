@@ -32,7 +32,7 @@ color_scheme <- PNWColors::pnw_palette("Bay", 4)
 
 ## Set data paths
 data_path <- "https://drive.google.com/drive/folders/1tl1Kf0PxVHbS7wPL4W071pvS1Af3Ji1i"
-local_path <- "data/"
+local_path <- "data/stat_summaries/"
 
 ## Authorize GDrive
 options(gargle_oauth_email = "peter.regier@pnnl.gov")

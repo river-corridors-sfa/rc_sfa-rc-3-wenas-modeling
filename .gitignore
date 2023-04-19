@@ -40,4 +40,5 @@ vignettes/*.pdf
 
 *.DS_Store
 
-*/data/*
+*/data/stat_summaries/*
+
