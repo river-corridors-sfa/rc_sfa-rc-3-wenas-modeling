@@ -1,0 +1,140 @@
+---
+title: "Plot changes in flow, sediment, DOC, and NO3 across fire severity/burned area scenarios"
+author: "PR"
+date: "2023-04-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, 
+                      message = F, 
+                      warnings = F)
+
+```
+
+## Intro and scope:
+
+Since there are issues with the original code I wrote, I'm going to rewrite in RMD form so it'll be easier to explain what I'm doing and diagnose where things are going wrong. The goal is to take the output files from modeling and plot how different scenarios impact water quantity (flow) and quality (concentrations of sediments, NO3, and DOC). There are two scenario types: fire characteristics (manipulate fire intensity/burn extent) and watershed characteristics (manipulate watershed slope / flows / vegetation). Currently, fire characteristics are available for the "New" model, so will plot those, then add in watershed characteristics once model outputs are uploaded. **NOTE: need to change the email (L38) to authorize `googledrive` to download raw data.**
+
+```{r Setup}
+
+## Read in packages using pacman::p_load
+require(pacman)
+p_load(tidyverse,
+       PNWColors,
+       plotly,
+       cowplot,
+       googledrive)
+
+## Set ggplot theme and color palette
+theme_set(theme_bw())
+color_scheme <- PNWColors::pnw_palette("Bay", 4)
+
+## Set data paths
+data_path <- "https://drive.google.com/drive/folders/1tl1Kf0PxVHbS7wPL4W071pvS1Af3Ji1i"
+local_path <- "data/"
+
+## Authorize GDrive
+options(gargle_oauth_email = "peter.regier@pnnl.gov")
+
+## Now, delete all these files (https://stackoverflow.com/questions/9296377/automatically-delete-files-folders)
+do.call(file.remove, list(list.files(local_path, full.names = TRUE)))
+
+```
+
+
+## Workflow
+
+To start, let's read in datasets and visualize the first couple of lines to make sure things look right. We're using loads for flow and sediment (kg/d) and concentrations for DOC and NO3 (mg/L): 
+
+```{r Download files to local}
+
+## Pull files
+files <- drive_ls(data_path) %>% 
+  filter(grepl("stats_summaries_PER_", name))
+
+## Download files to pr_work/data/
+for(i in 1:nrow(files)){
+  drive_download(files$id[[i]], paste0(local_path, files$name[[i]]), overwrite = T)
+}
+```
+
+
+```{r Read files into a raw dataframe}
+
+cols_of_interest <- c("flow", "sed", "nitrate_mgL", "doc_mgL")
+
+## Now they're local, read them in and label em
+read_data <- function(file){
+  read_csv(paste0(local_path, file)) %>% 
+    filter(metric == "mean") %>% ## focusing on mean initially, so filter out everything else
+    mutate(perc_burned = stringr::word(file, 4, 4, sep = "_")) %>%  ## Pull percent burned
+    mutate(severity = str_remove(stringr::word(file, 5, 5, sep = "_"), ".csv")) %>%  ## Pull fire severity
+    select(scenario, severity, perc_burned, all_of(cols_of_interest)) ## Pull the columns you want
+}
+
+## Read all files into a single dataframe
+df_raw <- files$name %>% 
+  map(read_data) %>% 
+  bind_rows()
+```
+
+
+```{r Trim out repeated baseline rows}
+## Remove repeated base_unburned rows after making sure they're duplicated
+df_trim <- df_raw %>% 
+  distinct(scenario, flow, .keep_all = T)
+
+df_trim
+```
+
+```{r Finalize dataset for plots}
+## Pull the baseline scenario out to use as a reference
+fire_base <- df_trim %>% 
+  filter(scenario == "base_unburned")
+
+## Cleaned up dataframe with ordered factors for plotting
+df_fires <- df_trim %>% 
+  filter(scenario != "base_unburned") %>% 
+  mutate(perc_burned = fct_relevel(as.factor(perc_burned), c("10", "15", "20", "25", "30", "40", "45", "50", "60", "75", "90", "100")), 
+         severity = fct_relevel(as.factor(severity), c("LOW", "MOD", "HIGH"))) 
+```
+
+## Plotting
+
+Time to make some plots. I'm suspecting, since this is mostly code from the first plot which made sense, that there is/was some mismatch between the Old Model files and my `230410_summarize_and_plot_scenarios.R` code. The test will be if scenarios for watershed characteristics make sense. This code does add in a check that the `base_unburned` rows match across all scnearios for columns they should match for, which is a good check, and one that won't do much for watershed characteristics.
+
+```{r Set up plotting infrastructure}
+## Set colors (loosely based on PNWColors)
+fire_colors = c("#F5C63C", "#F47F6B", "#BB5098")
+
+make_geom_col_fire <- function(var){
+  
+  x <- df_fires %>% 
+    select(severity, perc_burned, var)
+  
+  ggplot(x, aes_string(x = "perc_burned", y = var, fill = "severity")) +
+     geom_col(position = "dodge", color = "black", alpha = 0.5) + 
+    geom_hline(yintercept = fire_base %>% pull(var)) +
+    scale_fill_manual(values = fire_colors) + 
+    labs(fill = "")
+}
+```
+
+```{r Make plots}
+plot_grid(make_geom_col_fire("flow") + labs(x = "", y = "Flow (m3/s)"), 
+          make_geom_col_fire("sed") + labs(x = "", y = "Sediment (kg/d)"), 
+          make_geom_col_fire("nitrate_mgL") + labs(x = "", y = "Nitrate (mg/L)"), 
+          make_geom_col_fire("doc_mgL") + labs(x = "Percent of Watershed Burned", y = "DOC (mg/L)"), 
+          ncol = 1, align = "hv")
+ggsave("figures/230419_fire_characteristics_geom_col.png", width = 6, height = 9)
+```
+
+
+
+
+
+
+
+
+
