@@ -15,7 +15,9 @@ p_load(tidyverse, #keep it tidy
        janitor, # clean_names()
        ggthemes, # theme_map()
        ggsflabel, 
-       nhdplusTools,
+       ggnewscale, 
+       nhdplusTools, # get watershed boundary/flowlines
+       elevatr, 
        sf) # tidy spatial
 
 ## Set data path
@@ -72,28 +74,44 @@ wenas_huc12 <- get_huc(AOI = wenas_sites_sf,
 wenas_flowlines <- get_nhdplus(AOI = wenas_huc12)
 
 
+## Get DEM
+elevation_raw <- get_elev_raster(wenas_huc12, z = 10)
+
+## Crop DEM (don't need to reproject because default is WGS84)
+elevation_crop <- mask(elevation_raw, wenas_huc12)
+
+## Convert to dataframe
+elevation <- as.data.frame(elevation_crop, xy = T) %>% 
+  as_tibble() %>% 
+  rename("long" = x, 
+         "lat" = y, 
+         "elevation" = 3) %>% 
+  filter(!is.na(elevation))
+
 # 3. Make map ------------------------------------------------------------------
 
 ## Test map
 ggplot() + 
-  geom_sf(data = boundary, fill = NA, color = "gray") + 
-  geom_sf(data = wenas_huc12, fill = NA, color = "black") +
-  geom_sf(data = wenas_sites_sf, size = 2) 
+  geom_raster(data = elevation, aes(long, lat, alpha = elevation)) +
+  geom_sf(data = wenas_huc12, fill = NA, color = "black") 
 
 ## Set up severity color scheme
 fire_colors <- c("#54A266", "#F5F54F", "#F8B75B", "#FA8B63", "#FC543D", "#FF0F0F")
 
 ## Make map
 ggplot() + 
-  geom_sf(data = wenas_huc12, fill = "#D7DDC7", color = "black") +
-  #geom_sf(data = wenas_huc12, fill = "gray95", color = "black") +
+  geom_sf(data = wenas_huc12, fill = NA, color = "black") +
+  geom_raster(data = elevation, aes(long, lat, fill = elevation), show.legend = F, alpha = 0.8) +
+  scale_fill_gradientn(colors = c("#EFF7EA", "#ADD7A1", "#5FA965", "#245836", "#911C43")) +
+  new_scale_fill() + 
+  geom_sf(data = wenas_flowlines, color = "blue", alpha = 0.3) +
   geom_raster(data = severity, 
               aes(long, lat, fill = f_severity), alpha = 0.95) + 
-  geom_sf(data = wenas_flowlines, color = "blue", alpha = 0.3) +
   geom_sf(data = boundary, fill = NA, color = "red", lwd = 0.5) + 
+  scale_fill_manual(values = fire_colors) + 
   #geom_sf(data = wenas_sites_sf, size = 2) + 
   #geom_sf_text_repel(data = wenas_sites_sf, aes(label = id)) +
-  scale_fill_manual(values = fire_colors) + 
+  #scale_alpha(range = c(0.1, 0.5)) +
   theme_map() + 
   labs(x = "", y = "", fill = "Severity \n (dNBR)")
 
