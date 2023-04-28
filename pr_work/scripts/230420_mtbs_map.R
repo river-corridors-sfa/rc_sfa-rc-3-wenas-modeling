@@ -35,7 +35,7 @@ common_crs = 4326
 ## Read in burn boundary (#1)
 boundary <- read_sf(paste0(local_path, "wa4685412079920200831_20200830_20200909_burn_bndy.shp")) %>% 
   st_transform(common_crs)
-  
+
 ## Read in burn severity
 severity_raw <-  raster::raster(paste0(local_path, "wa4685412079920200831_20200830_20200909_dnbr6.tif"))
 
