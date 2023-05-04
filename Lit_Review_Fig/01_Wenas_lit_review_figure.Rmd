@@ -1,0 +1,361 @@
+---
+title: "02_Wenas_practice_generating_output_df"
+output: html_document
+date: "2023-05-02"
+---
+The purpose of this script is generate an output dataframe that is similar to Table 1 in Dove & Hart, 2017 (https://link.springer.com/article/10.4996/fireecology.130237746) that includes: 
+Study_ID
+Years since fire (TSF)
+Climate 
+control replicates (Nc)
+control mean (Xc)
+experimental replicates (Ne)
+experimental mean (Xe) 
+the natural log of the response ratio (ln[R])
+Percent change (percent_change)
+Percent change standard deviation (percent_changeSD)
+effect size standard deviation (EsSD)
+Difference (Diff)
+AND 
+Difference standard deviation (DiffSD) 
+FOR EACH STUDY_ID
+
+Worklow:
+Step 1) Load in meta data sheet from googledrive located in "Fire numerical modeling Paper->Background Figure_MEBandVGC->Wenas_modeling_Papers_use_for_Fig"
+
+Step 2) Clean spreadsheet to filter only data that is needed 
+
+Step 3) Group by study_ID and obtain values listed above
+
+Step 4) Save output file as: in "enter_directory filepath"
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## Load packages and set working directory
+```{r Morgan/Mac}
+#for Morgan/mac
+
+rm(list=ls(all=T)) #this clears your Environment
+
+mac.dir = "~/Library/CloudStorage/OneDrive-PNNL/Desktop/R_tutorials"
+wd = mac.dir  # change this if you are using a PC or a mac
+setwd(wd)
+
+library(ggplot2)
+library(googlesheets4)
+library(tidyverse)
+library(lubridate)
+```
+
+
+```{r Metadata Google Sheet Import}
+#import Metadata sheet that is stored on Google Sheet 
+metadata <- read_sheet("https://docs.google.com/spreadsheets/d/1S1-Aheu-BJiIybye95YQzRi_9e2kS-udcsKcsC7H8dk/edit#gid=0",col_types ='c')
+
+sites <- read_sheet("https://docs.google.com/spreadsheets/d/1S1-Aheu-BJiIybye95YQzRi_9e2kS-udcsKcsC7H8dk/edit#gid=0",col_types ='c')
+
+
+
+#you may OAuth access. Press 1 to grant access
+
+# select the columns that I want 
+metadata <- metadata[c("Study_ID", "Climate", "Burn or Unburn", "Time_Since_Fire",
+                 "DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
+                 "TN_mg_N_per_L", "STDEV_TN", "STER_TN",
+                 "NO3_mg_per_L_as_Nitrate", "STDEV_NO3", "STER_NO3",
+                 "NH4_mg_per_L_as_NH4", "STER_NH4")]
+
+# rename some of the columns 
+names(metadata)[names(metadata) == 'Burn or Unburn'] <- 'Treatment'
+
+# making all concentraions numeric
+
+metadata <- metadata %>% mutate_at(c("DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
+                               "TN_mg_N_per_L", "STDEV_TN", "STER_TN",
+                               "NO3_mg_per_L_as_Nitrate", "STDEV_NO3", "STER_NO3",
+                               "NH4_mg_per_L_as_NH4", "STER_NH4"), as.numeric)
+
+```
+
+
+```{r Analyte summary stats}
+
+# pivoting to make the responses in one column
+metadata_long <- metadata %>% 
+  pivot_longer(
+    cols = DOC_mg_C_L:STER_NH4,
+    names_to = "response_var",
+    values_to = "mean_concentration",
+    values_drop_na = TRUE
+  )
+
+
+
+MeanConc <- metadata_long %>% 
+  group_by(Study_ID, Treatment, response_var, Climate) %>% 
+  dplyr::summarize(N = n(),
+                   X = mean(mean_concentration, na.rm = TRUE))
+
+
+# By treatment and by response_var #
+# By DOC
+BurnDOC <- MeanConc %>% 
+  filter(Treatment == "Burn" & response_var == "DOC_mg_C_L")
+
+names(BurnDOC) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
+
+UnburnDOC <- MeanConc %>% 
+  filter(Treatment == "Unburn" & response_var == "DOC_mg_C_L")
+
+names(UnburnDOC) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
+
+DOC_table <- full_join(BurnDOC, UnburnDOC, by = c("Study_ID", "response"))
+
+# By nitrate
+BurnNO3 <- MeanConc %>% 
+  filter(Treatment == "Burn" & response_var == "NO3_mg_per_L_as_Nitrate")
+
+names(BurnNO3) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
+
+UnburnNO3 <- MeanConc %>% 
+  filter(Treatment == "Unburn" & response_var == "NO3_mg_per_L_as_Nitrate")
+
+names(UnburnNO3) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
+
+NO3_table <- full_join(BurnNO3, UnburnNO3, by = c("Study_ID", "response"))
+
+# By TN
+BurnTN <- MeanConc %>% 
+  filter(Treatment == "Burn" & response_var == "TN_mg_N_per_L")
+
+names(BurnTN) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
+
+UnburnTN <- MeanConc %>% 
+  filter(Treatment == "Unburn" & response_var == "TN_mg_N_per_L")
+
+names(UnburnTN) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
+
+TN_table <- full_join(BurnTN, UnburnTN, by = c("Study_ID", "response"))
+
+# By NH4
+BurnNH4 <- MeanConc %>% 
+  filter(Treatment == "Burn" & response_var == "NH4_mg_per_L_as_NH4")
+
+names(BurnNH4) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
+
+UnburnNH4 <- MeanConc %>% 
+  filter(Treatment == "Unburn" & response_var == "NH4_mg_per_L_as_NH4")
+
+names(UnburnNH4) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
+
+NH4_table <- full_join(BurnTN, UnburnTN, by = c("Study_ID", "response"))
+
+# calculating ln([R])/changes in richness
+# DOC
+DOC_table <- DOC_table %>% 
+  group_by(Study_ID) %>% 
+  mutate(lnR = log(Xe/Xc),
+         percent_change = 100*(1-lnR),
+         diff = Xe-Xc)
+# NO3 
+NO3_table <- NO3_table %>% 
+  group_by(Study_ID) %>% 
+  mutate(lnR = log(Xe/Xc),
+         percent_change = 100*(1-lnR),
+         diff = Xe-Xc)
+
+# TN
+TN_table <- TN_table %>% 
+  group_by(Study_ID) %>% 
+  mutate(lnR = log(Xe/Xc),
+         percent_change = 100*(1-lnR),
+         diff = Xe-Xc)
+
+# NH4
+NH4_table <- NH4_table %>% 
+  group_by(Study_ID) %>% 
+  mutate(lnR = log(Xe/Xc),
+         percent_change = 100*(1-lnR),
+         diff = Xe-Xc)
+
+# analyte table
+analyte_table <- rbind(DOC_table, NO3_table, TN_table, NH4_table)
+
+analyte_table <- analyte_table %>% 
+  mutate(across(c(Climate.x),
+                ~ifelse(Climate.x == "Temperate", "Temperate", "Mediterranean")))
+# Plot #
+p <- ggplot(analyte_table, aes(x = percent_change, y = Climate.x, fill = response)) +
+  geom_boxplot() +
+  facet_wrap(~response, scales = "free") +
+  geom_vline(xintercept = 0, linewidth = 1.5, color = "blue") +
+  theme_classic()
+
+
+
+
+
+
+
+```
+
+```{r data manipulation attempt}
+MeanConcTest <- metadata_long %>% 
+  group_by(Study_ID, Treatment, response_var, Climate) %>% 
+  dplyr::summarize(Ne = sum(Treatment == "Burn"),
+                   Nc = sum(Treatment == "Unburn"),
+                   Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
+                   Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
+
+MeanConcWide <- MeanConcTest %>% 
+  pivot_wider(names_from = response_var, values_from = c(Xe, Xc))
+
+# By treatment and by response_var #
+# By DOC
+BurnDOC <- MeanConcTest %>% 
+  filter(Treatment == "Burn" & response_var == "DOC_mg_C_L")
+
+
+# If else attempts # 
+MeanConcTest <- MeanConc
+unique(MeanConcTest$Treatment)
+MeanConcTest$Ne <- ifelse(MeanConcTest$Treatment == 'Burn', print(MeanConcTest$N), ifelse(MeanConcTest$Treatment == 'Unburn', NA, 'Big'))
+
+MeanConcTest$Nc <- ifelse(MeanConcTest$Treatment == 'Unburn', print(MeanConcTest$N), ifelse(MeanConcTest$Treatment == 'Burn', NA, 'Big'))
+  
+
+
+
+
+
+```
+
+```{r for loop attempt}
+# Alan's code 
+for(i in c("Douglas-fir forest", "Mixed Conifer forest", "Mountain woodland", "Sagebrush shrubland")) {
+  print(c("#################### ANOVA ########################", i))
+  print(anova(lmer(PercC6 ~ Burn_Severity) + (1|Parent_ID), data = subset(data_all, Land_Coverage_Category == i)))
+  print("")
+  print(c("#################### By Burn Severity ########################", i))
+  print(summary(lmer(PercC6 ~ Burn_Severity + (1|Parent_ID), data = subset(data_all, Land_Coverage_Category == i))))
+  print("")
+}
+
+# Stack exhange attempt 1
+df <- data.frame(Yi0 =  1:10,
+                 Yi1 = 21:30,
+                 V1 = c(1,1,1,1,1,0,0,0,0,0),
+                 V2 = c(0,1,0,1,0,1,0,1,0,1))
+
+df %>%
+  summarise(across(V1:V2, 
+                ~ mean(df %>% 
+                         filter(.x == 1) %>%
+                         pull(Yi1), na.rm = T) -
+                  mean(df %>% 
+                         filter(.x == 0) %>%
+                         pull(Yi0), na.rm = T)))
+
+for(i in 1:10) {                                           
+  x1 <- i^2                                                
+  print(x1)                                                
+}
+
+x3 <- numeric()
+
+for(i in 1:10) {                                           
+  x3 <- c(x3, i^2)                                         
+}
+x3
+
+for(i in 1:ncol(iris_new1)) {                              # Head of for-loop
+  if(grepl("Width", colnames(iris_new1)[i])) {             # Logical condition
+    iris_new1[ , i] <- iris_new1[ , i] + 1000              # Code block
+  }
+}
+
+
+
+```
+
+
+
+
+
+
+
+```{r}
+
+############################## other attempts that may be useful ######################################
+MeanConcWide <- MeanConc %>% 
+  pivot_wider(names_from = response_var, values_from = X)
+
+MeanConcWideTest <- MeanConc %>% 
+  pivot_wider(names_from = Treatment, values_from = N) %>% 
+  pivot_wider(names_from = response_var, values_from = X)
+
+MeanConcWideTest2 <- MeanConc %>% 
+  pivot_wider(names_from = Treatment, values_from = N)
+
+Table1 <- MeanConcWideTest2 %>% 
+  group_by(Study_ID, response_var) %>% 
+  dplyr::summarize(ratio = )
+  
+
+# By treatment #
+Burn <- MeanConcWide %>% 
+  filter(Treatment == "Burn")
+                   
+names(Burn) <- c("Study_ID", "Treatment", "Ne", "XeDOC", "XeNH4", "XeNO3", "SDdocE", "XeTN", "SEdocE",
+                 "SDtnE", "SEno3E", "SDno3E", "SEnh4E") 
+Unburn <- MeanConcWide %>% 
+  filter(Treatment == "Unburn")
+                   
+names(Unburn) <- c("Study_ID", "Treatment", "Nc", "XcDOC", "XcNH4", "XcNO3", "SDdocC", "XcTN", "SEdocC", "SDtnC", "SEno3C", "SDno3C", "SEnh4C") # renaming the column headers to match that of the chem file 
+
+
+
+Table1 <- full_join(Burn, Unburn, by = c("Study_ID"))
+
+# select the columns that I want 
+Table1 <- Table1[c("Study_ID", "Treatment", "Ne", "Nc", "XeDOC", "XeNH4", "XeNO3", "SDdocE",    "XeTN", "SEdocE", "SDtnE", "SEno3E", "SDno3E", "SEnh4E", "XcDOC", "XcNH4", "XcNO3", "SDdocC", "XcTN", "SEdocC", "SDtnC", "SEno3C", "SDno3C", "SEnh4C")]
+
+table_long <- Table1 %>% 
+  pivot_longer(
+    cols = XeDOC:SEnh4C,
+    names_to = "response_var",
+    values_to = "mean_concentration",
+    values_drop_na = TRUE
+  )
+
+
+Table2 <- Table1 %>% 
+  group_by(Study_ID) %>% 
+  mutate(percentDOC = ((1-(XeDOC/XcDOC))*100),
+         percentNO3 = ((1-(XeNO3/XcNO3))*100),
+         percentNH4 = ((1-(XeNH4/XcNH4))*100))
+
+# Table3 <- table_long %>% 
+#   group_by(Study_ID) %>% 
+#   mutate(output = XeDOC/XcDOC)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
