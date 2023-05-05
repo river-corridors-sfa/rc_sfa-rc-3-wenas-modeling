@@ -195,6 +195,8 @@ analyte_table <- rbind(DOC_table, NO3_table, TN_table, NH4_table)
 analyte_table <- analyte_table %>% 
   mutate(across(c(Climate.x),
                 ~ifelse(Climate.x == "Temperate", "Temperate", "Mediterranean")))
+
+write.csv(analyte_table, "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/analyte_table.csv", row.names=FALSE)
 # Plot #
 ggplot(analyte_table, aes(x = percent_change, y = response, fill = response)) +
   geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
