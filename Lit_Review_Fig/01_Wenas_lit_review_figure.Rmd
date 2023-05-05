@@ -72,12 +72,19 @@ metadata <- metadata[c("Study_ID", "Climate", "Burn or Unburn", "Time_Since_Fire
 # rename some of the columns 
 names(metadata)[names(metadata) == 'Burn or Unburn'] <- 'Treatment'
 
-# making all concentraions numeric
+# substituting all greater than or less than characters out 
+metadata <- as.data.frame(sapply(metadata, gsub, pattern = "<|>", replacement = ""))
 
+# making all concentraions numeric
 metadata <- metadata %>% mutate_at(c("DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
                                "TN_mg_N_per_L", "STDEV_TN", "STER_TN",
                                "NO3_mg_per_L_as_Nitrate", "STDEV_NO3", "STER_NO3",
                                "NH4_mg_per_L_as_NH4", "STER_NH4"), as.numeric)
+
+# Filter only post-burn/reference # study_ID 22 has some pre-burn and post-burn means that I want to ignore right now 
+metadata <- metadata %>% 
+  filter(Treatment == "Burn" | Treatment == "Unburn")
+
 
 ```
 
@@ -152,7 +159,7 @@ UnburnNH4 <- MeanConc %>%
 
 names(UnburnNH4) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
 
-NH4_table <- full_join(BurnTN, UnburnTN, by = c("Study_ID", "response"))
+NH4_table <- full_join(BurnNH4, UnburnNH4, by = c("Study_ID", "response"))
 
 # calculating ln([R])/changes in richness
 # DOC
@@ -189,6 +196,47 @@ analyte_table <- analyte_table %>%
   mutate(across(c(Climate.x),
                 ~ifelse(Climate.x == "Temperate", "Temperate", "Mediterranean")))
 # Plot #
+ggplot(analyte_table, aes(x = percent_change, y = response, fill = response)) +
+  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+  geom_boxplot() +
+  xlab("Percent Change") +
+  ylab("") +
+  xlim(-400, 100) +
+  theme(axis.text.y = element_blank()) +
+  scale_fill_brewer(palette="Set1",
+                     guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', 'NH4', 'NO3', 
+                                'TN')) +
+  theme_classic()
+
+ggsave("percent_change.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
+       width = 10, height = 10, units = "in")
+
+# Plot without that huge nitrate outlier
+analyte_table %>% 
+  filter(percent_change > -300) %>% 
+ggplot(aes(x = percent_change, y = response, fill = response)) +
+  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+  geom_boxplot() +
+  xlab("Percent Change") +
+  ylab("") +
+  xlim(-150, 100) +
+  theme(axis.text.y = element_blank()) +
+  scale_fill_brewer(palette="Set1",
+                     guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', 'NH4', 'NO3', 
+                                'TN')) +
+  theme_classic()
+
+ggsave("percent_change_no_outlier.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
+       width = 10, height = 10, units = "in")
+
+
+
+
+
 p <- ggplot(analyte_table, aes(x = percent_change, y = Climate.x, fill = response)) +
   geom_boxplot() +
   facet_wrap(~response, scales = "free") +
