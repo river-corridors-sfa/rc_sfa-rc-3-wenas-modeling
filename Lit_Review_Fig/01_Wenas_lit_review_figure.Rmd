@@ -36,12 +36,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Load packages and set working directory
-```{r Morgan/Mac}
-#for Morgan/mac
+```{r Jake/Mac}
+#for Jake/mac
 
 rm(list=ls(all=T)) #this clears your Environment
 
-mac.dir = "~/Library/CloudStorage/OneDrive-PNNL/Desktop/R_tutorials"
+mac.dir = "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"
 wd = mac.dir  # change this if you are using a PC or a mac
 setwd(wd)
 
@@ -66,6 +66,7 @@ metadata <- read_sheet("https://docs.google.com/spreadsheets/d/1S1-Aheu-BJiIybye
 metadata <- metadata[c("Study_ID", "Climate", "Burn or Unburn", "Time_Since_Fire",
                  "DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
                  "TN_mg_N_per_L", "STDEV_TN", "STER_TN",
+                 "TDN_mg_N_per_L", "STDEV_TDN", "STER_TDN",
                  "NO3_mg_per_L_as_Nitrate", "STDEV_NO3", "STER_NO3",
                  "NH4_mg_per_L_as_NH4", "STER_NH4")]
 
@@ -78,6 +79,7 @@ metadata <- as.data.frame(sapply(metadata, gsub, pattern = "<|>", replacement = 
 # making all concentraions numeric
 metadata <- metadata %>% mutate_at(c("DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
                                "TN_mg_N_per_L", "STDEV_TN", "STER_TN",
+                               "TDN_mg_N_per_L", "STDEV_TDN", "STER_TDN",
                                "NO3_mg_per_L_as_Nitrate", "STDEV_NO3", "STER_NO3",
                                "NH4_mg_per_L_as_NH4", "STER_NH4"), as.numeric)
 
@@ -100,150 +102,59 @@ metadata_long <- metadata %>%
     values_drop_na = TRUE
   )
 
+# Generating the count of observations for each treatment by analyte
+MeanConc <- metadata_long %>%
+  group_by(Study_ID, Treatment, response_var, Climate) %>%
+  dplyr::summarize(Ne = sum(Treatment == "Burn"),
+                   Nc = sum(Treatment == "Unburn"),
+                   Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
+                   Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
 
-
-MeanConc <- metadata_long %>% 
-  group_by(Study_ID, Treatment, response_var, Climate) %>% 
-  dplyr::summarize(N = n(),
-                   X = mean(mean_concentration, na.rm = TRUE))
-
-
-# By treatment and by response_var #
-# By DOC
-BurnDOC <- MeanConc %>% 
-  filter(Treatment == "Burn" & response_var == "DOC_mg_C_L")
-
-names(BurnDOC) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
-
-UnburnDOC <- MeanConc %>% 
-  filter(Treatment == "Unburn" & response_var == "DOC_mg_C_L")
-
-names(UnburnDOC) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
-
-DOC_table <- full_join(BurnDOC, UnburnDOC, by = c("Study_ID", "response"))
-
-# By nitrate
-BurnNO3 <- MeanConc %>% 
-  filter(Treatment == "Burn" & response_var == "NO3_mg_per_L_as_Nitrate")
-
-names(BurnNO3) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
-
-UnburnNO3 <- MeanConc %>% 
-  filter(Treatment == "Unburn" & response_var == "NO3_mg_per_L_as_Nitrate")
-
-names(UnburnNO3) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
-
-NO3_table <- full_join(BurnNO3, UnburnNO3, by = c("Study_ID", "response"))
-
-# By TN
-BurnTN <- MeanConc %>% 
-  filter(Treatment == "Burn" & response_var == "TN_mg_N_per_L")
-
-names(BurnTN) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
-
-UnburnTN <- MeanConc %>% 
-  filter(Treatment == "Unburn" & response_var == "TN_mg_N_per_L")
-
-names(UnburnTN) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
-
-TN_table <- full_join(BurnTN, UnburnTN, by = c("Study_ID", "response"))
-
-# By NH4
-BurnNH4 <- MeanConc %>% 
-  filter(Treatment == "Burn" & response_var == "NH4_mg_per_L_as_NH4")
-
-names(BurnNH4) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
-
-UnburnNH4 <- MeanConc %>% 
-  filter(Treatment == "Unburn" & response_var == "NH4_mg_per_L_as_NH4")
-
-names(UnburnNH4) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
-
-NH4_table <- full_join(BurnNH4, UnburnNH4, by = c("Study_ID", "response"))
-
-# calculating ln([R])/changes in richness
-# DOC
-DOC_table <- DOC_table %>% 
-  group_by(Study_ID) %>% 
-  mutate(lnR = log(Xe/Xc),
-         percent_change = 100*(1-lnR),
-         diff = Xe-Xc)
-# NO3 
-NO3_table <- NO3_table %>% 
-  group_by(Study_ID) %>% 
+# Calculating effect size/percent_difference and other stats that we want to plot 
+analyte_table <- MeanConc %>% 
+  select(-Treatment) %>% 
+  group_by(Study_ID, response_var, Climate) %>% 
+  summarize(Ne = sum(Ne),
+            Nc = sum(Nc),
+            Xe = sum(Xe, na.rm = TRUE),
+            Xc = sum(Xc, na.rm = TRUE)) %>% 
   mutate(lnR = log(Xe/Xc),
          percent_change = 100*(1-lnR),
          diff = Xe-Xc)
 
-# TN
-TN_table <- TN_table %>% 
-  group_by(Study_ID) %>% 
-  mutate(lnR = log(Xe/Xc),
-         percent_change = 100*(1-lnR),
-         diff = Xe-Xc)
 
-# NH4
-NH4_table <- NH4_table %>% 
-  group_by(Study_ID) %>% 
-  mutate(lnR = log(Xe/Xc),
-         percent_change = 100*(1-lnR),
-         diff = Xe-Xc)
-
-# analyte table
-analyte_table <- rbind(DOC_table, NO3_table, TN_table, NH4_table)
 
 analyte_table <- analyte_table %>% 
-  mutate(across(c(Climate.x),
-                ~ifelse(Climate.x == "Temperate", "Temperate", "Mediterranean")))
+  mutate(across(c(Climate),
+                ~ifelse(Climate == "Temperate", "Temperate", "Mediterranean")))
 
 write.csv(analyte_table, "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/analyte_table.csv", row.names=FALSE)
+
+
 # Plot #
-ggplot(analyte_table, aes(x = percent_change, y = response, fill = response)) +
+
+
+analyte_table_filter <- analyte_table %>% 
+  filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate" | response_var == "NH4_mg_per_L_as_NH4"|
+         response_var == "TDN_mg_N_per_L" | response_var == "TN_mg_N_per_L")
+
+ggplot(analyte_table_filter, aes(x = percent_change, y = response_var, fill = response_var)) +
   geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
   geom_boxplot() +
   xlab("Percent Change") +
   ylab("") +
-  xlim(-400, 100) +
+  # xlim(-400, 100) +
   theme(axis.text.y = element_blank()) +
   scale_fill_brewer(palette="Set1",
                      guide = guide_legend(title = "Analyte"),
-                     labels = c('DOC', 'NH4', 'NO3', 
-                                'TN')) +
+                     labels = c('DOC','NH4', 'NO3',
+                                'TDN', 'TN')) +
   theme_classic()
 
 ggsave("percent_change.pdf",
        path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
        width = 10, height = 10, units = "in")
 
-# Plot without that huge nitrate outlier
-analyte_table %>% 
-  filter(percent_change > -300) %>% 
-ggplot(aes(x = percent_change, y = response, fill = response)) +
-  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
-  geom_boxplot() +
-  xlab("Percent Change") +
-  ylab("") +
-  xlim(-150, 100) +
-  theme(axis.text.y = element_blank()) +
-  scale_fill_brewer(palette="Set1",
-                     guide = guide_legend(title = "Analyte"),
-                     labels = c('DOC', 'NH4', 'NO3', 
-                                'TN')) +
-  theme_classic()
-
-ggsave("percent_change_no_outlier.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
-       width = 10, height = 10, units = "in")
-
-
-
-
-
-p <- ggplot(analyte_table, aes(x = percent_change, y = Climate.x, fill = response)) +
-  geom_boxplot() +
-  facet_wrap(~response, scales = "free") +
-  geom_vline(xintercept = 0, linewidth = 1.5, color = "blue") +
-  theme_classic()
 
 ```
 
@@ -260,38 +171,6 @@ p <- ggplot(analyte_table, aes(x = percent_change, y = Climate.x, fill = respons
 
 
 
-
-
-```{r data manipulation attempt}
-MeanConcTest <- metadata_long %>% 
-  group_by(Study_ID, Treatment, response_var, Climate) %>% 
-  dplyr::summarize(Ne = sum(Treatment == "Burn"),
-                   Nc = sum(Treatment == "Unburn"),
-                   Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
-                   Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
-
-MeanConcWide <- MeanConcTest %>% 
-  pivot_wider(names_from = response_var, values_from = c(Xe, Xc))
-
-# By treatment and by response_var #
-# By DOC
-BurnDOC <- MeanConcTest %>% 
-  filter(Treatment == "Burn" & response_var == "DOC_mg_C_L")
-
-
-# If else attempts # 
-MeanConcTest <- MeanConc
-unique(MeanConcTest$Treatment)
-MeanConcTest$Ne <- ifelse(MeanConcTest$Treatment == 'Burn', print(MeanConcTest$N), ifelse(MeanConcTest$Treatment == 'Unburn', NA, 'Big'))
-
-MeanConcTest$Nc <- ifelse(MeanConcTest$Treatment == 'Unburn', print(MeanConcTest$N), ifelse(MeanConcTest$Treatment == 'Burn', NA, 'Big'))
-  
-
-
-
-
-
-```
 
 ```{r for loop attempt}
 # Alan's code 
@@ -350,6 +229,141 @@ for(i in 1:ncol(iris_new1)) {                              # Head of for-loop
 ```{r}
 
 ############################## other attempts that may be useful ######################################
+# By treatment and by response_var #
+# By DOC
+BurnDOC <- MeanConc %>% 
+  filter(Treatment == "Burn" & response_var == "DOC_mg_C_L")
+
+names(BurnDOC) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
+
+UnburnDOC <- MeanConc %>% 
+  filter(Treatment == "Unburn" & response_var == "DOC_mg_C_L")
+
+names(UnburnDOC) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
+
+DOC_table <- full_join(BurnDOC, UnburnDOC, by = c("Study_ID", "response"))
+
+# By nitrate
+BurnNO3 <- MeanConc %>% 
+  filter(Treatment == "Burn" & response_var == "NO3_mg_per_L_as_Nitrate")
+
+names(BurnNO3) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
+
+UnburnNO3 <- MeanConc %>% 
+  filter(Treatment == "Unburn" & response_var == "NO3_mg_per_L_as_Nitrate")
+
+names(UnburnNO3) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
+
+NO3_table <- full_join(BurnNO3, UnburnNO3, by = c("Study_ID", "response"))
+
+# By TN
+BurnTN <- MeanConc %>% 
+  filter(Treatment == "Burn" & response_var == "TN_mg_N_per_L")
+
+names(BurnTN) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
+
+UnburnTN <- MeanConc %>% 
+  filter(Treatment == "Unburn" & response_var == "TN_mg_N_per_L")
+
+names(UnburnTN) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
+
+TN_table <- full_join(BurnTN, UnburnTN, by = c("Study_ID", "response"))
+
+# By NH4
+BurnNH4 <- MeanConc %>% 
+  filter(Treatment == "Burn" & response_var == "NH4_mg_per_L_as_NH4")
+
+names(BurnNH4) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
+
+UnburnNH4 <- MeanConc %>% 
+  filter(Treatment == "Unburn" & response_var == "NH4_mg_per_L_as_NH4")
+
+names(UnburnNH4) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
+
+NH4_table <- full_join(BurnNH4, UnburnNH4, by = c("Study_ID", "response"))
+
+# By TDN
+BurnTDN <- MeanConc %>% 
+  filter(Treatment == "Burn" & response_var == "TDN_mg_N_per_L")
+
+names(BurnTDN) <- c("Study_ID", "Treatment", "response", "Climate", "Ne", "Xe")
+
+UnburnTDN <- MeanConc %>% 
+  filter(Treatment == "Unburn" & response_var == "TDN_mg_N_per_L")
+
+names(UnburnTDN) <- c("Study_ID", "Treatment", "response", "Climate", "Nc", "Xc")
+
+TDN_table <- full_join(BurnTDN, UnburnTDN, by = c("Study_ID", "response"))
+
+# calculating ln([R])/changes in richness
+# DOC
+DOC_table <- DOC_table %>% 
+  group_by(Study_ID) %>% 
+  mutate(lnR = log(Xe/Xc),
+         percent_change = 100*(1-lnR),
+         diff = Xe-Xc)
+# NO3 
+NO3_table <- NO3_table %>% 
+  group_by(Study_ID) %>% 
+  mutate(lnR = log(Xe/Xc),
+         percent_change = 100*(1-lnR),
+         diff = Xe-Xc)
+
+# TN
+TN_table <- TN_table %>% 
+  group_by(Study_ID) %>% 
+  mutate(lnR = log(Xe/Xc),
+         percent_change = 100*(1-lnR),
+         diff = Xe-Xc)
+
+# NH4
+NH4_table <- NH4_table %>% 
+  group_by(Study_ID) %>% 
+  mutate(lnR = log(Xe/Xc),
+         percent_change = 100*(1-lnR),
+         diff = Xe-Xc)
+
+# TDN
+TDN_table <- TDN_table %>% 
+  group_by(Study_ID) %>% 
+  mutate(lnR = log(Xe/Xc),
+         percent_change = 100*(1-lnR),
+         diff = Xe-Xc)
+
+
+MeanConcTest <- metadata_long %>% 
+  group_by(Study_ID, Treatment, response_var, Climate) %>% 
+  dplyr::summarize(Ne = sum(Treatment == "Burn"),
+                   Nc = sum(Treatment == "Unburn"),
+                   Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
+                   Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
+
+MeanConcWide <- MeanConcTest %>% 
+  pivot_wider(names_from = response_var, values_from = c(Xe, Xc))
+
+# By treatment and by response_var #
+# By DOC
+BurnDOC <- MeanConcTest %>% 
+  filter(Treatment == "Burn" & response_var == "DOC_mg_C_L")
+
+
+# If else attempts # 
+MeanConcTest <- MeanConc
+unique(MeanConcTest$Treatment)
+MeanConcTest$Ne <- ifelse(MeanConcTest$Treatment == 'Burn', print(MeanConcTest$N), ifelse(MeanConcTest$Treatment == 'Unburn', NA, 'Big'))
+
+MeanConcTest$Nc <- ifelse(MeanConcTest$Treatment == 'Unburn', print(MeanConcTest$N), ifelse(MeanConcTest$Treatment == 'Burn', NA, 'Big'))
+  
+
+
+MeanConc <- metadata_long %>%
+  group_by(Study_ID, Treatment, response_var, Climate) %>%
+  dplyr::summarize(N = n(),
+                   X = mean(mean_concentration, na.rm = TRUE))
+
+
+
+
 MeanConcWide <- MeanConc %>% 
   pivot_wider(names_from = response_var, values_from = X)
 
