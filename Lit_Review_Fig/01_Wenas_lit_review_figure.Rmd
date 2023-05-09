@@ -63,7 +63,7 @@ metadata <- read_sheet("https://docs.google.com/spreadsheets/d/1S1-Aheu-BJiIybye
 #you may OAuth access. Press 1 to grant access
 
 # select the columns that I want 
-metadata <- metadata[c("Study_ID", "Climate", "Burn or Unburn", "Time_Since_Fire",
+metadata <- metadata[c("Study_ID", "Pair_JSC", "Climate", "Burn or Unburn", "Time_Since_Fire",
                  "DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
                  "TN_mg_N_per_L", "STDEV_TN", "STER_TN",
                  "TDN_mg_N_per_L", "STDEV_TDN", "STER_TDN",
@@ -71,6 +71,7 @@ metadata <- metadata[c("Study_ID", "Climate", "Burn or Unburn", "Time_Since_Fire
                  "NH4_mg_per_L_as_NH4", "STER_NH4")]
 
 # rename some of the columns 
+
 names(metadata)[names(metadata) == 'Burn or Unburn'] <- 'Treatment'
 
 # substituting all greater than or less than characters out 
@@ -110,18 +111,21 @@ MeanConc <- metadata_long %>%
                    Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
                    Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
 
+
 # Calculating effect size/percent_difference and other stats that we want to plot 
 analyte_table <- MeanConc %>% 
   select(-Treatment) %>% 
-  group_by(Study_ID, response_var, Climate) %>% 
+  group_by(Study_ID, response_var, Climate) %>%
   summarize(Ne = sum(Ne),
             Nc = sum(Nc),
             Xe = sum(Xe, na.rm = TRUE),
-            Xc = sum(Xc, na.rm = TRUE)) %>% 
+            Xc = sum(Xc, na.rm = TRUE)) %>%
   mutate(lnR = log(Xe/Xc),
-         percent_change = 100*(1-lnR),
+         percent_change = (((Xe-Xc)/Xc)*100),
          diff = Xe-Xc)
 
+analyte_table$Xe <- format(analyte_table$Xe, scientific=F)
+analyte_table$Xc <- format(analyte_table$Xc, scientific=F)
 
 
 analyte_table <- analyte_table %>% 
@@ -132,8 +136,6 @@ write.csv(analyte_table, "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/ana
 
 
 # Plot #
-
-
 analyte_table_filter <- analyte_table %>% 
   filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate" | response_var == "NH4_mg_per_L_as_NH4"|
          response_var == "TDN_mg_N_per_L" | response_var == "TN_mg_N_per_L")
@@ -143,7 +145,7 @@ ggplot(analyte_table_filter, aes(x = percent_change, y = response_var, fill = re
   geom_boxplot() +
   xlab("Percent Change") +
   ylab("") +
-  # xlim(-400, 100) +
+  xlim(-100, 500) +
   theme(axis.text.y = element_blank()) +
   scale_fill_brewer(palette="Set1",
                      guide = guide_legend(title = "Analyte"),
@@ -155,6 +157,36 @@ ggsave("percent_change.pdf",
        path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
        width = 10, height = 10, units = "in")
 
+
+# # with Pair as a test #
+# MeanConcTest <- metadata_long %>%
+#   group_by(Study_ID, Pair_JSC, Treatment, response_var, Climate) %>%
+#   dplyr::summarize(Ne = sum(Treatment == "Burn"),
+#                    Nc = sum(Treatment == "Unburn"),
+#                    Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
+#                    Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
+# 
+# analyte_table_test <- MeanConcTest %>% 
+#   select(-Treatment) %>% 
+#   group_by(Study_ID, Pair_JSC, response_var, Climate) %>% 
+#   summarize(Ne = sum(Ne),
+#             Nc = sum(Nc),
+#             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
+#             Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
+#             Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE)) 
+# 
+# analyte_table_test2 <- MeanConcTest %>% 
+#   select(-Pair_JSC) %>% 
+#   group_by(Study_ID, response_var, Climate) %>% 
+#   summarize(Ne = sum(Ne),
+#             Nc = sum(Nc),
+#             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
+#             Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
+#             Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE)) %>%
+#   mutate(diff1 = Xe1-Xc,
+#          diff2 = Xe2-Xc,
+#          etc....)
+#
 
 ```
 
