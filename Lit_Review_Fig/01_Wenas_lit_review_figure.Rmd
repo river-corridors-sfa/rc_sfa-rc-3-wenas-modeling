@@ -136,7 +136,7 @@ analyte_table <- analyte_table %>%
 write.csv(analyte_table, "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/analyte_table.csv", row.names=FALSE)
 
 
-# Plot #
+# Plot # This is all of the study IDs grouped together 
 analyte_table_filter <- analyte_table %>% 
   filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate" | response_var == "NH4_mg_per_L_as_NH4"|
          response_var == "TDN_mg_N_per_L" | response_var == "TN_mg_N_per_L")
