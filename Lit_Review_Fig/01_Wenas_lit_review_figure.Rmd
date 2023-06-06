@@ -20,7 +20,7 @@ AND
 Difference standard deviation (DiffSD) 
 FOR EACH STUDY_ID
 
-Worklow:
+Workflow:
 Step 1) Load in meta data sheet from googledrive located in "Fire numerical modeling Paper->Background Figure_MEBandVGC->Wenas_modeling_Papers_use_for_Fig"
 
 Step 2) Clean spreadsheet to filter only data that is needed 
@@ -162,31 +162,67 @@ ggsave("percent_change.pdf",
 
 
 
-```{r pairs test}
-# with Pair as a test #
+```{r pairs test with MEB and JSC on 6/1/2023}
+# With Pair with MEB and JSC on 6/1/2023 # 
+Morgan_test <- metadata_long %>% 
+  group_by(response_var, Study_ID, Pair_JSC) %>% 
+  summarise(n = n(),
+            mean = mean(mean_concentration),
+            sd = sd(mean_concentration))
+
+
+# plot # 
+ggplot(summary, aes(x=Burn_Severity, y=mean, color=Feedstock))+
+  geom_point()+
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd))+
+  theme_classic()+
+  ylab("P Mobilized (%)")+ 
+  xlab("Burn Severity")+
+  scale_color_manual(values=c("#346648", "#dbb40d"))+
+  facet_grid(variable~Feedstock, scales="free")+
+  theme(text = element_text(size = 18), axis.text.x = element_text(angle=45, hjust = 1))+ theme(legend.position = "none")
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r pairs test JSC}
+
+# with Pair as a test JSC #
 MeanConcTest <- metadata_long %>%
   group_by(Study_ID, Pair_JSC, Treatment, response_var, Climate) %>%
   dplyr::summarize(Ne = sum(Treatment == "Burn"),
                    Nc = sum(Treatment == "Unburn"),
                    Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
-                   Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
+                   Sde = sd(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
+                   Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE),
+                   Sdc = sd(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
 
-analyte_table_test <- MeanConcTest %>%
-  select(-Treatment) %>%
-  group_by(Study_ID, Pair_JSC, response_var, Climate) %>%
-  summarize(Ne = sum(Ne),
-            Nc = sum(Nc),
-            Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
-            Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
-            Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
-            Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
-            Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
-            Xe6 = sum(Xe[Pair_JSC == "Site 6"], na.rm = TRUE),
-            Xe7 = sum(Xe[Pair_JSC == "Site 7"], na.rm = TRUE),
-            Xe8 = sum(Xe[Pair_JSC == "Site 8"], na.rm = TRUE),
-            Xe9 = sum(Xe[Pair_JSC == "Site 9"], na.rm = TRUE),
-            Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
-            Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE))
+# analyte_table_test <- MeanConcTest %>%
+#   select(-Treatment) %>%
+#   group_by(Study_ID, Pair_JSC, response_var, Climate) %>%
+#   summarize(Ne = sum(Ne),
+#             Nc = sum(Nc),
+#             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
+#             Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
+#             Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
+#             Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
+#             Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
+#             Xe6 = sum(Xe[Pair_JSC == "Site 6"], na.rm = TRUE),
+#             Xe7 = sum(Xe[Pair_JSC == "Site 7"], na.rm = TRUE),
+#             Xe8 = sum(Xe[Pair_JSC == "Site 8"], na.rm = TRUE),
+#             Xe9 = sum(Xe[Pair_JSC == "Site 9"], na.rm = TRUE),
+#             Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
+#             Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE))
 
 analyte_table_test2 <- MeanConcTest %>%
   select(-Pair_JSC) %>%
@@ -204,43 +240,114 @@ analyte_table_test2 <- MeanConcTest %>%
             Xe9 = sum(Xe[Pair_JSC == "Site 9"], na.rm = TRUE),
             Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
             Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE)) 
+# with sd
+# analyte_table_test <- MeanConcTest %>%
+#   select(-Treatment) %>%
+#   group_by(Study_ID, Pair_JSC, response_var, Climate) %>%
+#   summarize(Ne = sum(Ne),
+#             Nc = sum(Nc),
+#             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
+#             Sd1 = sum(Sde[Pair_JSC == "Site 1"], na.rm = TRUE),
+#             Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
+#             Sd2 = sum(Sde[Pair_JSC == "Site 2"], na.rm = TRUE),
+#             Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
+#             Sd3 = sum(Sde[Pair_JSC == "Site 3"], na.rm = TRUE),
+#             Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
+#             Sd4 = sum(Sde[Pair_JSC == "Site 4"], na.rm = TRUE),
+#             Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
+#             Sd5 = sum(Sde[Pair_JSC == "Site 5"], na.rm = TRUE),
+#             Xe6 = sum(Xe[Pair_JSC == "Site 6"], na.rm = TRUE),
+#             Sd6 = sum(Sde[Pair_JSC == "Site 6"], na.rm = TRUE),
+#             Xe7 = sum(Xe[Pair_JSC == "Site 7"], na.rm = TRUE),
+#             Sd7 = sum(Sde[Pair_JSC == "Site 7"], na.rm = TRUE),
+#             Xe8 = sum(Xe[Pair_JSC == "Site 8"], na.rm = TRUE),
+#             Sd8 = sum(Sde[Pair_JSC == "Site 8"], na.rm = TRUE),
+#             Xe9 = sum(Xe[Pair_JSC == "Site 9"], na.rm = TRUE),
+#             Sd9 = sum(Sde[Pair_JSC == "Site 9"], na.rm = TRUE),
+#             Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
+#             Sd10 = sum(Sde[Pair_JSC == "Site 10"], na.rm = TRUE),
+#             Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE),
+#             Sdc = sum(Sdc[Pair_JSC == "Control"], na.rm = TRUE))
+
+analyte_table_test2 <- MeanConcTest %>%
+  select(-Pair_JSC) %>%
+  group_by(Study_ID, response_var, Climate) %>%
+  summarize(Ne = sum(Ne),
+            Nc = sum(Nc),
+            Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
+            Sd1 = sum(Sde[Pair_JSC == "Site 1"], na.rm = TRUE),
+            Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
+            Sd2 = sum(Sde[Pair_JSC == "Site 2"], na.rm = TRUE),
+            Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
+            Sd3 = sum(Sde[Pair_JSC == "Site 3"], na.rm = TRUE),
+            Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
+            Sd4 = sum(Sde[Pair_JSC == "Site 4"], na.rm = TRUE),
+            Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
+            Sd5 = sum(Sde[Pair_JSC == "Site 5"], na.rm = TRUE),
+            Xe6 = sum(Xe[Pair_JSC == "Site 6"], na.rm = TRUE),
+            Sd6 = sum(Sde[Pair_JSC == "Site 6"], na.rm = TRUE),
+            Xe7 = sum(Xe[Pair_JSC == "Site 7"], na.rm = TRUE),
+            Sd7 = sum(Sde[Pair_JSC == "Site 7"], na.rm = TRUE),
+            Xe8 = sum(Xe[Pair_JSC == "Site 8"], na.rm = TRUE),
+            Sd8 = sum(Sde[Pair_JSC == "Site 8"], na.rm = TRUE),
+            Xe9 = sum(Xe[Pair_JSC == "Site 9"], na.rm = TRUE),
+            Sd9 = sum(Sde[Pair_JSC == "Site 9"], na.rm = TRUE),
+            Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
+            Sd10 = sum(Sde[Pair_JSC == "Site 10"], na.rm = TRUE),
+            Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE),
+            Sdc = sum(Sdc[Pair_JSC == "Control"], na.rm = TRUE))
+
 
 analyte_table_test2[analyte_table_test2 == 0] <- NA
 
 analyte_table_test3 <- analyte_table_test2 %>% 
   group_by(Study_ID, response_var, Climate) %>%
-  mutate(diff1 = Xe1 - Xc,
-         diff2 = Xe2 - Xc,
-         diff3 = Xe3 - Xc,
-         diff4 = Xe4 - Xc,
-         diff5 = Xe5 - Xc,
-         diff6 = Xe6 - Xc,
-         diff7 = Xe7 - Xc,
-         diff8 = Xe8 - Xc,
-         diff9 = Xe9 - Xc,
-         diff10 = Xe10 - Xc) 
+  mutate(percent_change1 = (((Xe1-Xc)/Xc)*100),
+         percent_change2 = (((Xe2-Xc)/Xc)*100),
+         percent_change3 = (((Xe3-Xc)/Xc)*100),
+         percent_change4 = (((Xe4-Xc)/Xc)*100),
+         percent_change5 = (((Xe5-Xc)/Xc)*100),
+         percent_change6 = (((Xe6-Xc)/Xc)*100),
+         percent_change7 = (((Xe7-Xc)/Xc)*100),
+         percent_change8 = (((Xe8-Xc)/Xc)*100),
+         percent_change9 = (((Xe9-Xc)/Xc)*100),
+         percent_change10 = (((Xe10-Xc)/Xc)*100))
+
+
+# mutate(diff1 = Xe1 - Xc,
+  #        diff2 = Xe2 - Xc,
+  #        diff3 = Xe3 - Xc,
+  #        diff4 = Xe4 - Xc,
+  #        diff5 = Xe5 - Xc,
+  #        diff6 = Xe6 - Xc,
+  #        diff7 = Xe7 - Xc,
+  #        diff8 = Xe8 - Xc,
+  #        diff9 = Xe9 - Xc,
+  #        diff10 = Xe10 - Xc) 
 
 
 # pivoting to make the responses in one column
 analyte_table_test3_long <- analyte_table_test3 %>% 
   pivot_longer(
-    cols = diff1:diff10,
+    cols = percent_change1:percent_change10,
     names_to = "Site",
-    values_to = "Difference",
+    values_to = "Percent_Difference",
     values_drop_na = TRUE
   )
+
 
 # Plot #
 analyte_table_filter <- analyte_table_test3_long %>% 
   filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate" | response_var == "NH4_mg_per_L_as_NH4"|
          response_var == "TDN_mg_N_per_L" | response_var == "TN_mg_N_per_L")
 
-ggplot(analyte_table_filter, aes(x = Difference, y = response_var, color = Site, shape = response_var)) +
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, color = Site, shape = response_var)) +
   geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
   geom_point() +
-  xlab("Difference") +
+  geom_errorbar(aes(xmin=Xe1-Sd1, xmax=Xe1+Sd1),
+                linewidth = 0.2, color = "black", alpha = 0.9, size = 1.0)+
+  xlab("Percent Difference") +
   ylab("") +
-  xlim(-2.5, 2.5) +
   theme(axis.text.y = element_blank()) +
   scale_color_brewer(palette="Set1") +
   facet_wrap(~Study_ID, scales = "free") +
@@ -250,12 +357,18 @@ ggsave("test.site.difference.pdf",
        path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
        width = 25, height = 20, units = "in")
 
+
+
+
+
+
+
 # Plot #
 analyte_table_filter <- analyte_table_test3_long %>% 
   filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate" | response_var == "NH4_mg_per_L_as_NH4"|
          response_var == "TDN_mg_N_per_L" | response_var == "TN_mg_N_per_L")
 
-ggplot(analyte_table_filter, aes(x = Difference, y = response_var, fill = response_var)) +
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, fill = response_var)) +
   geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
   geom_boxplot() +
   xlab("Difference") +
@@ -269,6 +382,8 @@ ggplot(analyte_table_filter, aes(x = Difference, y = response_var, fill = respon
 ggsave("test.site.difference.box.pdf",
        path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
        width = 25, height = 20, units = "in")
+
+geom_point()
 
 
 ```
