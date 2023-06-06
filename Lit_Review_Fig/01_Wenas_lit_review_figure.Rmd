@@ -63,7 +63,8 @@ metadata <- read_sheet("https://docs.google.com/spreadsheets/d/1S1-Aheu-BJiIybye
 #you may OAuth access. Press 1 to grant access
 
 # select the columns that I want 
-metadata <- metadata[c("Study_ID", "Pair_JSC", "Climate", "Burn or Unburn", "Time_Since_Fire",
+metadata <- metadata[c("Study_ID", "Pair_JSC", "Climate_JSC_from_climatecharts.com", 
+                       "Burn or Unburn", "Time_Since_Fire_JSC",
                  "DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
                  "TN_mg_N_per_L", "STDEV_TN", "STER_TN",
                  "TDN_mg_N_per_L", "STDEV_TDN", "STER_TDN",
@@ -72,7 +73,8 @@ metadata <- metadata[c("Study_ID", "Pair_JSC", "Climate", "Burn or Unburn", "Tim
 
 # rename some of the columns 
 metadata <- metadata %>% 
-    rename("Treatment" = "Burn or Unburn")
+    rename("Treatment" = "Burn or Unburn") %>% 
+    rename("Climate" = "Climate_JSC_from_climatecharts.com")
 
 
 # substituting all greater than or less than characters out 
@@ -160,46 +162,20 @@ ggsave("percent_change.pdf",
 ```
 
 
-
-
-```{r pairs test with MEB and JSC on 6/1/2023}
-# With Pair with MEB and JSC on 6/1/2023 # 
-Morgan_test <- metadata_long %>% 
-  group_by(response_var, Study_ID, Pair_JSC) %>% 
-  summarise(n = n(),
-            mean = mean(mean_concentration),
-            sd = sd(mean_concentration))
-
-
-# plot # 
-ggplot(summary, aes(x=Burn_Severity, y=mean, color=Feedstock))+
-  geom_point()+
-  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd))+
-  theme_classic()+
-  ylab("P Mobilized (%)")+ 
-  xlab("Burn Severity")+
-  scale_color_manual(values=c("#346648", "#dbb40d"))+
-  facet_grid(variable~Feedstock, scales="free")+
-  theme(text = element_text(size = 18), axis.text.x = element_text(angle=45, hjust = 1))+ theme(legend.position = "none")
-
-
-
-```
-
-
-
-
-
-
-
-
-
-
 ```{r pairs test JSC}
+
+# pivoting to make the responses in one column
+metadata_long <- metadata %>% 
+  pivot_longer(
+    cols = DOC_mg_C_L:STER_NH4,
+    names_to = "response_var",
+    values_to = "mean_concentration",
+    values_drop_na = TRUE
+  )
 
 # with Pair as a test JSC #
 MeanConcTest <- metadata_long %>%
-  group_by(Study_ID, Pair_JSC, Treatment, response_var, Climate) %>%
+  group_by(Study_ID, Pair_JSC, Treatment, response_var, Climate, Time_Since_Fire_JSC) %>%
   dplyr::summarize(Ne = sum(Treatment == "Burn"),
                    Nc = sum(Treatment == "Unburn"),
                    Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
@@ -226,7 +202,7 @@ MeanConcTest <- metadata_long %>%
 
 analyte_table_test2 <- MeanConcTest %>%
   select(-Pair_JSC) %>%
-  group_by(Study_ID, response_var, Climate) %>%
+  group_by(Study_ID, response_var, Climate, Time_Since_Fire_JSC) %>%
   summarize(Ne = sum(Ne),
             Nc = sum(Nc),
             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
@@ -271,7 +247,7 @@ analyte_table_test2 <- MeanConcTest %>%
 
 analyte_table_test2 <- MeanConcTest %>%
   select(-Pair_JSC) %>%
-  group_by(Study_ID, response_var, Climate) %>%
+  group_by(Study_ID, response_var, Climate, Time_Since_Fire_JSC) %>%
   summarize(Ne = sum(Ne),
             Nc = sum(Nc),
             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
@@ -301,7 +277,7 @@ analyte_table_test2 <- MeanConcTest %>%
 analyte_table_test2[analyte_table_test2 == 0] <- NA
 
 analyte_table_test3 <- analyte_table_test2 %>% 
-  group_by(Study_ID, response_var, Climate) %>%
+  group_by(Study_ID, response_var, Climate, Time_Since_Fire_JSC) %>%
   mutate(percent_change1 = (((Xe1-Xc)/Xc)*100),
          percent_change2 = (((Xe2-Xc)/Xc)*100),
          percent_change3 = (((Xe3-Xc)/Xc)*100),
@@ -337,9 +313,68 @@ analyte_table_test3_long <- analyte_table_test3 %>%
 
 
 # Plot #
+vn = expression(paste(""*N*O[3]^"-"))
+
+# filter out the only analytes that we want to include in the figure 
 analyte_table_filter <- analyte_table_test3_long %>% 
-  filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate" | response_var == "NH4_mg_per_L_as_NH4"|
-         response_var == "TDN_mg_N_per_L" | response_var == "TN_mg_N_per_L")
+  filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate")
+
+# boxplot with all the sites in one box 
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, fill = response_var)) +
+  geom_boxplot() +
+  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+  xlab("Percent Difference") +
+  ylab("") +
+  theme(axis.text.y = element_blank()) +
+  scale_fill_brewer(palette="Set1") +
+  facet_wrap(~Study_ID, scales = "free") +
+  theme_classic()
+
+ggsave("all.sites.difference.box.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
+       width = 25, height = 20, units = "in")
+
+# boxplot grouped by Climate #
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y = Climate, fill = response_var)) +
+  geom_boxplot() +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+  xlab("Percent Difference") +
+  ylab("") +
+  xlim(-100, 500) + 
+  scale_fill_brewer(palette="Set1",
+                    guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  theme_classic() +
+  theme(axis.text.y = element_text(size = 20),
+        axis.text.x = element_text(size = 20),
+        axis.title.x = element_text(size = 25))
+
+ggsave("Climate.sites.difference.box.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
+       width = 10, height = 8, units = "in")
+
+# boxplot grouped by TSF #
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y=Time_Since_Fire_JSC, fill = response_var)) +
+  geom_boxplot() +
+  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+  xlab("Percent Difference") +
+  ylab("") +
+  xlim(-100, 500) + 
+  scale_fill_brewer(palette="Set1",
+                    guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  theme_classic() +
+  theme(axis.text.y = element_text(size = 20),
+        axis.text.x = element_text(size = 20),
+        axis.title.x = element_text(size = 25))
+
+ggsave("TSF.sites.difference.box.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
+       width = 10, height = 8, units = "in")
+  
+
+# pointplot with sd attempt #
 
 ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, color = Site, shape = response_var)) +
   geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
@@ -389,6 +424,32 @@ geom_point()
 ```
 
 
+
+
+
+```{r pairs test with MEB and JSC on 6/1/2023}
+# With Pair with MEB and JSC on 6/1/2023 # 
+Morgan_test <- metadata_long %>% 
+  group_by(response_var, Study_ID, Pair_JSC) %>% 
+  summarise(n = n(),
+            mean = mean(mean_concentration),
+            sd = sd(mean_concentration))
+
+
+# plot # 
+ggplot(summary, aes(x=Burn_Severity, y=mean, color=Feedstock))+
+  geom_point()+
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd))+
+  theme_classic()+
+  ylab("P Mobilized (%)")+ 
+  xlab("Burn Severity")+
+  scale_color_manual(values=c("#346648", "#dbb40d"))+
+  facet_grid(variable~Feedstock, scales="free")+
+  theme(text = element_text(size = 18), axis.text.x = element_text(angle=45, hjust = 1))+ theme(legend.position = "none")
+
+
+
+```
 
 
 
