@@ -63,21 +63,24 @@ metadata <- read_sheet("https://docs.google.com/spreadsheets/d/1S1-Aheu-BJiIybye
 #you may OAuth access. Press 1 to grant access
 
 # select the columns that I want 
-metadata <- metadata[c("Study_ID", "Pair_JSC", "Climate_JSC_from_climatecharts.com", 
-                       "Burn or Unburn", "Time_Since_Fire_JSC",
+metadata <- metadata %>% select("Study_ID", "Pair_JSC", "Climate_JSC_from_climatecharts.com", 
+                       "Burn or Unburn", "Time_Since_Fire", "Time_Since_Fire_JSC",
                  "DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
                  "TN_mg_N_per_L", "STDEV_TN", "STER_TN",
                  "TDN_mg_N_per_L", "STDEV_TDN", "STER_TDN",
                  "NO3_mg_per_L_as_Nitrate", "STDEV_NO3", "STER_NO3",
-                 "NH4_mg_per_L_as_NH4", "STER_NH4")]
+                 "NH4_mg_per_L_as_NH4", "STER_NH4")
 
 # rename some of the columns 
 metadata <- metadata %>% 
-    rename("Treatment" = "Burn or Unburn") %>% 
-    rename("Climate" = "Climate_JSC_from_climatecharts.com")
+    rename("Treatment" = "Burn or Unburn",
+           "Climate" = "Climate_JSC_from_climatecharts.com") 
 
 
 # substituting all greater than or less than characters out 
+# metadata <- metadata %>% 
+#   mutate_all(str_remove(.,"<"))
+
 metadata <- as.data.frame(sapply(metadata, gsub, pattern = "<|>", replacement = ""))
 
 # making all concentraions numeric
@@ -91,6 +94,23 @@ metadata <- metadata %>% mutate_at(c("DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
 metadata <- metadata %>% 
   filter(Treatment == "Burn" | Treatment == "Unburn")
 
+# Create a column that takes the time_since_fire column and mutates it into categorical buckets 
+unique(metadata$Time_Since_Fire)
+
+# BRI advice for the below chunk #
+# remove years using string remove 
+# something within tidy to work with factors 
+# look at the factors link in the chat 
+
+# JSC solution to this mutate 
+metadata <- metadata %>% 
+  mutate(metadata, TSF = ifelse(grepl("0-1|0-2|1 month|1|2|3|1-3|1-2", Time_Since_Fire), "0-3 years",
+                              ifelse(grepl("4|5", Time_Since_Fire), "4-5 years",
+                              ifelse(grepl("6|7|8|9|10", Time_Since_Fire), "6-10 years",
+                              ifelse(grepl("11|12|13", Time_Since_Fire), ">10 years",
+                              ifelse(grepl("Pre-fire", Time_Since_Fire), "Pre-Fire",
+                              ifelse(grepl("1-13 years post fire", Time_Since_Fire), "Post-Fire", "Other")))))))
+                              
 
 ```
 
@@ -175,7 +195,7 @@ metadata_long <- metadata %>%
 
 # with Pair as a test JSC #
 MeanConcTest <- metadata_long %>%
-  group_by(Study_ID, Pair_JSC, Treatment, response_var, Climate, Time_Since_Fire_JSC) %>%
+  group_by(Study_ID, Pair_JSC, Treatment, response_var, Climate, TSF) %>%
   dplyr::summarize(Ne = sum(Treatment == "Burn"),
                    Nc = sum(Treatment == "Unburn"),
                    Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
@@ -183,26 +203,10 @@ MeanConcTest <- metadata_long %>%
                    Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE),
                    Sdc = sd(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
 
-# analyte_table_test <- MeanConcTest %>%
-#   select(-Treatment) %>%
-#   group_by(Study_ID, Pair_JSC, response_var, Climate) %>%
-#   summarize(Ne = sum(Ne),
-#             Nc = sum(Nc),
-#             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
-#             Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
-#             Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
-#             Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
-#             Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
-#             Xe6 = sum(Xe[Pair_JSC == "Site 6"], na.rm = TRUE),
-#             Xe7 = sum(Xe[Pair_JSC == "Site 7"], na.rm = TRUE),
-#             Xe8 = sum(Xe[Pair_JSC == "Site 8"], na.rm = TRUE),
-#             Xe9 = sum(Xe[Pair_JSC == "Site 9"], na.rm = TRUE),
-#             Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
-#             Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE))
 
 analyte_table_test2 <- MeanConcTest %>%
   select(-Pair_JSC) %>%
-  group_by(Study_ID, response_var, Climate, Time_Since_Fire_JSC) %>%
+  group_by(Study_ID, response_var, Climate, TSF) %>%
   summarize(Ne = sum(Ne),
             Nc = sum(Nc),
             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
@@ -217,9 +221,9 @@ analyte_table_test2 <- MeanConcTest %>%
             Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
             Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE)) 
 # with sd
-# analyte_table_test <- MeanConcTest %>%
-#   select(-Treatment) %>%
-#   group_by(Study_ID, Pair_JSC, response_var, Climate) %>%
+# analyte_table_test2 <- MeanConcTest %>%
+#   select(-Pair_JSC) %>%
+#   group_by(Study_ID, response_var, Climate, TSF) %>%
 #   summarize(Ne = sum(Ne),
 #             Nc = sum(Nc),
 #             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
@@ -245,39 +249,14 @@ analyte_table_test2 <- MeanConcTest %>%
 #             Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE),
 #             Sdc = sum(Sdc[Pair_JSC == "Control"], na.rm = TRUE))
 
-analyte_table_test2 <- MeanConcTest %>%
-  select(-Pair_JSC) %>%
-  group_by(Study_ID, response_var, Climate, Time_Since_Fire_JSC) %>%
-  summarize(Ne = sum(Ne),
-            Nc = sum(Nc),
-            Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
-            Sd1 = sum(Sde[Pair_JSC == "Site 1"], na.rm = TRUE),
-            Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
-            Sd2 = sum(Sde[Pair_JSC == "Site 2"], na.rm = TRUE),
-            Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
-            Sd3 = sum(Sde[Pair_JSC == "Site 3"], na.rm = TRUE),
-            Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
-            Sd4 = sum(Sde[Pair_JSC == "Site 4"], na.rm = TRUE),
-            Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
-            Sd5 = sum(Sde[Pair_JSC == "Site 5"], na.rm = TRUE),
-            Xe6 = sum(Xe[Pair_JSC == "Site 6"], na.rm = TRUE),
-            Sd6 = sum(Sde[Pair_JSC == "Site 6"], na.rm = TRUE),
-            Xe7 = sum(Xe[Pair_JSC == "Site 7"], na.rm = TRUE),
-            Sd7 = sum(Sde[Pair_JSC == "Site 7"], na.rm = TRUE),
-            Xe8 = sum(Xe[Pair_JSC == "Site 8"], na.rm = TRUE),
-            Sd8 = sum(Sde[Pair_JSC == "Site 8"], na.rm = TRUE),
-            Xe9 = sum(Xe[Pair_JSC == "Site 9"], na.rm = TRUE),
-            Sd9 = sum(Sde[Pair_JSC == "Site 9"], na.rm = TRUE),
-            Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
-            Sd10 = sum(Sde[Pair_JSC == "Site 10"], na.rm = TRUE),
-            Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE),
-            Sdc = sum(Sdc[Pair_JSC == "Control"], na.rm = TRUE))
-
 
 analyte_table_test2[analyte_table_test2 == 0] <- NA
 
+# study_ID 12 is the poo poo study with multiple controls
+
 analyte_table_test3 <- analyte_table_test2 %>% 
-  group_by(Study_ID, response_var, Climate, Time_Since_Fire_JSC) %>%
+  filter(Study_ID != "12") %>% 
+  group_by(Study_ID, response_var, Climate, TSF) %>%
   mutate(percent_change1 = (((Xe1-Xc)/Xc)*100),
          percent_change2 = (((Xe2-Xc)/Xc)*100),
          percent_change3 = (((Xe3-Xc)/Xc)*100),
@@ -289,6 +268,53 @@ analyte_table_test3 <- analyte_table_test2 %>%
          percent_change9 = (((Xe9-Xc)/Xc)*100),
          percent_change10 = (((Xe10-Xc)/Xc)*100))
 
+### BRIE advice ###
+# study_ID 12 is the poo poo study with multiple controls
+# pulling it out and then put it back in using add_row
+# ifelse statement teaching moment- wee
+
+brie_test <- MeanConcTest %>% 
+  filter(Study_ID == "12") %>% 
+  group_by(Study_ID, response_var, Climate, TSF) %>%
+  summarize(Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
+            Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
+            Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
+            Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
+            Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
+            Xc123 = sum(Xc[Pair_JSC == "Control 1, 2, and 3"], na.rm = TRUE),
+            Xc4 = sum(Xc[Pair_JSC == "Control 4"], na.rm = TRUE),
+            Xc5 = sum(Xc[Pair_JSC == "Control 5"], na.rm = TRUE)) 
+
+brie_test_stats <- brie_test %>% 
+  group_by(Study_ID, response_var, Climate, TSF) %>%
+  mutate(percent_change1 = (((Xe1-Xc123)/Xc123)*100),
+         percent_change2 = (((Xe2-Xc123)/Xc123)*100),
+         percent_change3 = (((Xe3-Xc123)/Xc123)*100),
+         percent_change4 = (((Xe4-Xc4)/Xc4)*100),
+         percent_change5 = (((Xe5-Xc5)/Xc5)*100)) %>% 
+  add_column(Ne = NA,
+             Nc = NA,
+             Xe6 = NA,
+             Xe7 = NA,
+             Xe8 = NA,
+             Xe9 = NA,
+             Xe10 = NA,
+             Xc = NA,
+             percent_change6 = NA,
+             percent_change7 = NA,
+             percent_change8 = NA,
+             percent_change9 = NA,
+             percent_change10 = NA) %>% 
+  ungroup()
+
+analyte_table_test3 <-analyte_table_test3 %>% 
+  add_column(Xc123 = NA,
+             Xc4 = NA,
+             Xc5 = NA) %>% 
+  ungroup()
+
+analyte_table_test3_combine <- analyte_table_test3 %>% 
+  add_row(brie_test_stats)
 
 # mutate(diff1 = Xe1 - Xc,
   #        diff2 = Xe2 - Xc,
@@ -355,7 +381,7 @@ ggsave("Climate.sites.difference.box.pdf",
        width = 10, height = 8, units = "in")
 
 # boxplot grouped by TSF #
-ggplot(analyte_table_filter, aes(x = Percent_Difference, y=Time_Since_Fire_JSC, fill = response_var)) +
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y=TSF, fill = response_var)) +
   geom_boxplot() +
   geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
   xlab("Percent Difference") +
@@ -400,8 +426,7 @@ ggsave("test.site.difference.pdf",
 
 # Plot #
 analyte_table_filter <- analyte_table_test3_long %>% 
-  filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate" | response_var == "NH4_mg_per_L_as_NH4"|
-         response_var == "TDN_mg_N_per_L" | response_var == "TN_mg_N_per_L")
+  filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate")
 
 ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, fill = response_var)) +
   geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
@@ -419,6 +444,58 @@ ggsave("test.site.difference.box.pdf",
        width = 25, height = 20, units = "in")
 
 geom_point()
+
+# geom_pointrange grouped by Climate #
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y = Climate, xmin = Xe1-Sd1, xmax = Xe1+Sd1)) +
+  geom_point() +
+  geom_errorbarh(height=.2) +
+  xlim(-100, 500) 
+
+
+df.summary <- analyte_table_filter %>%
+  group_by(Climate) %>%
+  summarise(
+    sd = sd(Xc/Xe1, na.rm = TRUE),
+    Percent_Difference = mean(Percent_Difference)
+  )
+
+df.summary
+
+# I want to pivot_longer to make all means in one column
+# pivoting to make the responses in one column
+analyte_table_test4_long <- analyte_table_filter%>% 
+  pivot_longer(
+    cols = Xe1:Xc,
+    names_to = "Stats",
+    values_to = "Value",
+    values_drop_na = TRUE
+  )
+
+df.summary.2 <- analyte_table_test4_long %>%
+  group_by(Climate, response_var) %>%
+  summarise(
+    sd = sd(Value*100, na.rm = TRUE),
+    Percent_Difference = mean(Percent_Difference)
+  )
+
+df.summary.2
+
+# geom_jitter
+ggplot(analyte_table_filter, aes(Percent_Difference, Climate, color = response_var)) +
+  geom_jitter(position = position_jitter(0.2), alpha = 0.4) +
+  geom_pointrange(aes(xmin = Percent_Difference-sd, xmax = Percent_Difference+sd, color = response_var), data = df.summary.2) +
+  xlim(-100, 500) +
+  scale_color_manual(values = c("#00AFBB", "#E7B800"),
+                     guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  theme_classic()
+
+ggsave("site.difference.geom_pointrange.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
+       width = 25, height = 20, units = "in")
+
+
+
 
 
 ```
