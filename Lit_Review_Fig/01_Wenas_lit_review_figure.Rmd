@@ -2,6 +2,8 @@
 title: "02_Wenas_practice_generating_output_df"
 output: html_document
 date: "2023-05-02"
+editor_options: 
+  chunk_output_type: console
 ---
 The purpose of this script is generate an output dataframe that is similar to Table 1 in Dove & Hart, 2017 (https://link.springer.com/article/10.4996/fireecology.130237746) that includes: 
 Study_ID
@@ -328,6 +330,9 @@ analyte_table_long_2 <- analyte_table_filter %>%
     values_drop_na = TRUE
   )
 
+
+# duplicating code 
+my_data[!duplicated(my_data$Sepal.Width), ]
 # Calculating the standard deviation for all of the means 
 # calculating the mean percent_difference by climate 
 climate.summary <- analyte_table_long_2 %>%
@@ -337,16 +342,22 @@ climate.summary <- analyte_table_long_2 %>%
     Percent_Difference = mean(Percent_Difference)
   )
 
+climate.summary.test <- analyte_table_filter %>%
+  group_by(Climate, response_var) %>%
+  summarise(
+    sd = sd(Percent_Difference, na.rm = TRUE),
+    Percent_Difference = mean(Percent_Difference)
+  )
+
 
 # geom_jitter for climate # 
-ggplot(analyte_table_filter, aes(Percent_Difference, Climate, color = response_var)) +
-  geom_jitter(position = position_jitter(0.2), alpha = 0.4) +
+ggplot(analyte_table_filter, aes(Percent_Difference, Climate, color = response_var),
+       position = position_dodge(width = -0.5)) +
+  geom_jitter(position = position_jitter(0.1), alpha = 0.4) +
   geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
                       color = response_var),
-                      position = position_dodge(width = -0.5), data = climate.summary) +
+                      position = position_dodge(width = -0.5), data = climate.summary.test) +
   geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
-  geom_vline(xintercept = 64, linewidth = 0.5, color = "red") +
-  
   xlim(-100, 700) +
   scale_color_manual(values = c("#00AFBB", "#E7B800"),
                      guide = guide_legend(title = "Analyte"),
