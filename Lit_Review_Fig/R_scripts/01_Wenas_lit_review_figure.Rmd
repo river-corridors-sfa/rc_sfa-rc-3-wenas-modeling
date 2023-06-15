@@ -22,6 +22,8 @@ AND
 Difference standard deviation (DiffSD) 
 FOR EACH STUDY_ID
 
+We also want to create a figure showing the variability of percent change between sites that have been burned compared to their reference site that is listed in the study_ID
+
 Workflow:
 Step 1) Load in meta data sheet from googledrive located in "Fire numerical modeling Paper->Background Figure_MEBandVGC->Wenas_modeling_Papers_use_for_Fig"
 
@@ -32,20 +34,13 @@ Step 3) Group by study_ID and obtain values listed above
 Step 4) Save output file as: in "enter_directory filepath"
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 
-```
 
 ## Load packages and set working directory
 ```{r Jake/Mac}
 #for Jake/mac
 
 rm(list=ls(all=T)) #this clears your Environment
-
-mac.dir = "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"
-wd = mac.dir  # change this if you are using a PC or a mac
-setwd(wd)
 
 library(ggplot2)
 library(googlesheets4)
