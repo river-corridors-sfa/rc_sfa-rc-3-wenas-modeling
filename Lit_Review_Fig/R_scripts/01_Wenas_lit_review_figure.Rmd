@@ -22,7 +22,7 @@ AND
 Difference standard deviation (DiffSD) 
 FOR EACH STUDY_ID
 
-We also want to create a figure showing the variability of percent change between sites that have been burned compared to their reference site that is listed in the study_ID
+We also want to create a figure showing the variability of percent change between sites that have been burned compared to their reference site that is listed in the study_ID grouped put by TSF 
 
 Workflow:
 Step 1) Load in meta data sheet from googledrive located in "Fire numerical modeling Paper->Background Figure_MEBandVGC->Wenas_modeling_Papers_use_for_Fig"
@@ -49,6 +49,7 @@ library(lubridate)
 ```
 
 
+### STEP 1 load in the data and filter out what columns we want ### 
 ```{r Metadata Google Sheet Import}
 #import Metadata sheet that is stored on Google Sheet 
 metadata <- read_sheet("https://docs.google.com/spreadsheets/d/1S1-Aheu-BJiIybye95YQzRi_9e2kS-udcsKcsC7H8dk/edit#gid=0",col_types ='c')
@@ -56,7 +57,7 @@ metadata <- read_sheet("https://docs.google.com/spreadsheets/d/1S1-Aheu-BJiIybye
 #you may need OAuth access. Press 1 to grant access
 
 # select the columns that I want 
-metadata <- metadata %>% select("Study_ID", "Pair_JSC", "Climate_JSC_from_climatecharts.com", 
+metadata <- metadata %>% select("Study_ID", "Pair_JSC", "Climate_JSC_from_climatecharts.net", 
                        "Burn or Unburn", "Time_Since_Fire", "Time_Since_Fire_JSC",
                  "DOC_mg_C_L", "STDEV_DOC", "STER_DOC",
                  "TN_mg_N_per_L", "STDEV_TN", "STER_TN",
@@ -67,7 +68,7 @@ metadata <- metadata %>% select("Study_ID", "Pair_JSC", "Climate_JSC_from_climat
 # rename some of the columns 
 metadata <- metadata %>% 
     rename("Treatment" = "Burn or Unburn",
-           "Climate" = "Climate_JSC_from_climatecharts.com") 
+           "Koppen" = "Climate_JSC_from_climatecharts.net") 
 
 
 # substituting all greater than or less than characters out 
@@ -104,13 +105,12 @@ metadata <- metadata %>%
                               ifelse(grepl("Pre-fire", Time_Since_Fire), "Pre-Fire",
                               ifelse(grepl("1-13 years post fire|Post-fire", Time_Since_Fire), "Post-Fire", "Other")))))))
 
-# None should be classified as Other #
-
-
-
+# No study ID's should be classified as Other #
+unique(metadata$TSF)
 ```
 
 
+#### STEP 2 calculate the means for each analyte by site  ### 
 ```{r Analyte summary stats}
 
 # pivoting to make the responses in one column
@@ -124,7 +124,7 @@ metadata_long <- metadata %>%
 
 # calculating the mean of all the burns and all the controls by analyte for each study #
 MeanConcTest <- metadata_long %>%
-  group_by(Study_ID, Pair_JSC, Treatment, response_var, Climate, TSF) %>%
+  group_by(Study_ID, Pair_JSC, Treatment, response_var, Koppen, TSF) %>%
   dplyr::summarize(Ne = sum(Treatment == "Burn"),
                    Nc = sum(Treatment == "Unburn"),
                    Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
@@ -137,7 +137,7 @@ MeanConcTest <- metadata_long %>%
     # Any study_ID that doesn't have up to 10 sites will have a 0 in the respective Xen column 
 analyte_table_means <- MeanConcTest %>%
   select(-Pair_JSC) %>%
-  group_by(Study_ID, response_var, Climate, TSF) %>%
+  group_by(Study_ID, response_var, Koppen, TSF) %>%
   summarize(Ne = sum(Ne),
             Nc = sum(Nc),
             Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
@@ -164,7 +164,7 @@ analyte_table_means[analyte_table_means == 0] <- NA
 
 analyte_table_percent_change <- analyte_table_means %>% 
   filter(Study_ID != "12") %>% 
-  group_by(Study_ID, response_var, Climate, TSF) %>%
+  group_by(Study_ID, response_var, Koppen, TSF) %>%
   mutate(percent_change1 = (((Xe1-Xc)/Xc)*100),
          percent_change2 = (((Xe2-Xc)/Xc)*100),
          percent_change3 = (((Xe3-Xc)/Xc)*100),
@@ -180,7 +180,7 @@ analyte_table_percent_change <- analyte_table_means %>%
 
 brie_test <- MeanConcTest %>% 
   filter(Study_ID == "12") %>% 
-  group_by(Study_ID, response_var, Climate, TSF) %>%
+  group_by(Study_ID, response_var, Koppen, TSF) %>%
   summarize(Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
             Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
             Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
@@ -193,7 +193,7 @@ brie_test <- MeanConcTest %>%
 # This is doing the same as analyte_table_percent_change but for study_ID_12
 # I am also adding columns to match the columns to ultimately combine analyte_table_percent_change with this below chunk that does the stats for study_ID_12
 brie_test_stats <- brie_test %>% 
-  group_by(Study_ID, response_var, Climate, TSF) %>%
+  group_by(Study_ID, response_var, Koppen, TSF) %>%
   mutate(percent_change1 = (((Xe1-Xc123)/Xc123)*100),
          percent_change2 = (((Xe2-Xc123)/Xc123)*100),
          percent_change3 = (((Xe3-Xc123)/Xc123)*100),
@@ -225,6 +225,19 @@ analyte_table_percent_change <-analyte_table_percent_change %>%
 analyte_table_combine <- analyte_table_percent_change %>% 
   add_row(brie_test_stats)
 
+# Adding a broader climate variable that will group the codes into climates that people actually understand #
+unique(analyte_table_combine$Koppen)
+
+analyte_table_combine <- analyte_table_combine %>% 
+  mutate(analyte_table_combine, Climate = ifelse(grepl("Dfb|Dfc|Dsc", Koppen), "Cold",
+                              ifelse(grepl("Cfb|Csa|Csb", Koppen), "Temperate",
+                              ifelse(grepl("BSk", Koppen), "Arid",
+                              ifelse(grepl("As|Af|Am", Koppen), "Tropical",
+                              ifelse(grepl("ET|EF", Koppen), "Polar", "Other"))))))
+
+# export dataframe 
+write.csv(analyte_table_combine, "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/Output_for_analysis/analyte_table.csv", row.names=FALSE)
+
 
 # pivoting to make the responses in one column
 analyte_table_long <- analyte_table_combine %>% 
@@ -235,85 +248,9 @@ analyte_table_long <- analyte_table_combine %>%
     values_drop_na = TRUE
   )
 
-
-#### Ploting ####
-vn = expression(paste(""*N*O[3]^"-"))
-
 # filter out the only analytes that we want to include in the figure 
 analyte_table_filter <- analyte_table_long %>% 
   filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate")
-
-# boxplot with all the sites in one box 
-ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, fill = response_var)) +
-  geom_boxplot() +
-  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
-  xlab("Percent Difference") +
-  ylab("") +
-  theme(axis.text.y = element_blank()) +
-  scale_fill_brewer(palette="Set1") +
-  facet_wrap(~Study_ID, scales = "free") +
-  theme_classic()
-
-ggsave("all.sites.difference.box.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
-       width = 25, height = 20, units = "in")
-
-# boxplot with sites broken up #
-ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, fill = response_var)) +
-  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
-  geom_boxplot() +
-  xlab("Difference") +
-  ylab("") +
-  xlim(-2.5, 2.5) +
-  theme(axis.text.y = element_blank()) +
-  scale_fill_brewer(palette="Set1") +
-  facet_wrap(~Study_ID, scales = "free") +
-  theme_classic()
-
-ggsave("test.site.difference.box.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
-       width = 25, height = 20, units = "in")
-
-
-# boxplot grouped by Climate #
-ggplot(analyte_table_filter, aes(x = Percent_Difference, y = Climate, fill = response_var)) +
-  geom_boxplot() +
-  geom_jitter(shape=16, position=position_jitter(0.2)) +
-  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
-  xlab("Percent Difference") +
-  ylab("") +
-  xlim(-100, 700) + 
-  scale_fill_brewer(palette="Set1",
-                    guide = guide_legend(title = "Analyte"),
-                     labels = c('DOC', vn)) +
-  theme_classic() +
-  theme(axis.text.y = element_text(size = 20),
-        axis.text.x = element_text(size = 20),
-        axis.title.x = element_text(size = 25))
-
-ggsave("Climate.sites.difference.box.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
-       width = 10, height = 8, units = "in")
-
-# boxplot grouped by TSF #
-ggplot(analyte_table_filter, aes(x = Percent_Difference, y=TSF, fill = response_var)) +
-  geom_boxplot() +
-  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
-  xlab("Percent Difference") +
-  ylab("") +
-  xlim(-100, 700) + 
-  scale_fill_brewer(palette="Set1",
-                    guide = guide_legend(title = "Analyte"),
-                     labels = c('DOC', vn)) +
-  theme_classic() +
-  theme(axis.text.y = element_text(size = 20),
-        axis.text.x = element_text(size = 20),
-        axis.title.x = element_text(size = 25))
-
-ggsave("TSF.sites.difference.box.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
-       width = 10, height = 8, units = "in")
-
 
 # I want to pivot_longer to make all means in one column
 # pivoting to make the responses in one column
@@ -325,43 +262,15 @@ analyte_table_long_2 <- analyte_table_filter %>%
     values_drop_na = TRUE
   )
 
-
-# duplicating code 
-my_data[!duplicated(my_data$Sepal.Width), ]
-# Calculating the standard deviation for all of the means 
+# Calculating the standard deviation for all of the percent_differences
 # calculating the mean percent_difference by climate 
-climate.summary <- analyte_table_long_2 %>%
-  group_by(Climate, response_var) %>%
-  summarise(
-    sd = sd(Value*100, na.rm = TRUE),
-    Percent_Difference = mean(Percent_Difference)
-  )
-
-climate.summary.test <- analyte_table_filter %>%
-  group_by(Climate, response_var) %>%
+climate.summary <- analyte_table_filter %>%
+  group_by(Koppen, response_var, Climate) %>%
   summarise(
     sd = sd(Percent_Difference, na.rm = TRUE),
     Percent_Difference = mean(Percent_Difference)
   )
 
-
-# geom_jitter for climate # 
-ggplot(analyte_table_filter, aes(Percent_Difference, Climate, color = response_var),
-       position = position_dodge(width = -0.5)) +
-  geom_jitter(position = position_jitter(0.1), alpha = 0.4) +
-  geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
-                      color = response_var),
-                      position = position_dodge(width = -0.5), data = climate.summary.test) +
-  geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
-  xlim(-100, 700) +
-  scale_color_manual(values = c("#00AFBB", "#E7B800"),
-                     guide = guide_legend(title = "Analyte"),
-                     labels = c('DOC', vn)) +
-  theme_classic()
-
-ggsave("site.difference.geom_pointrange.climate.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
-       width = 10, height = 8, units = "in")
 
 # Calculating the standard deviation for all of the means 
 # calculating the mean percent_difference by TSF
@@ -371,6 +280,80 @@ TSF.summary <- analyte_table_long_2 %>%
     sd = sd(Value*100, na.rm = TRUE),
     Percent_Difference = mean(Percent_Difference)
   )
+
+
+```
+
+
+### STEP 3 Plotting ###
+```{r plots}
+# Ploting #
+vn = expression(paste(""*N*O[3]^"-"))
+
+# geom_jitter for climate # 
+ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_var),
+              position = position_dodge(width = -0.5)) +
+  geom_jitter(position = position_jitter(0.1), alpha = 0.4) +
+  geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
+                      color = response_var),
+                      position = position_dodge(width = -0.5), data = climate.summary) +
+  geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
+  xlim(-100, 700) +
+  scale_color_manual(values = c("#00AFBB", "#E7B800"),
+                     guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  theme_classic()
+
+ggsave("site.difference.geom_pointrange.climate.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       width = 10, height = 8, units = "in")
+
+# geom_jitter for climate facet # 
+ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_var),
+              position = position_dodge(width = -0.5)) +
+  geom_jitter(position = position_jitter(0.1), alpha = 0.4) +
+  geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
+                      color = response_var),
+                      position = position_dodge(width = -0.5), data = climate.summary) +
+  geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
+  facet_grid(~Climate ~ .) +
+  xlim(-100, 700) +
+  scale_color_manual(values = c("#00AFBB", "#E7B800"),
+                     guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  theme_classic()
+
+ggsave("site.difference.geom_pointrange.climate.facet.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       width = 10, height = 8, units = "in")
+
+# attempt to do shading in the background # 
+ggplot(analyte_table_filter, aes(Percent_Difference, Koppen),
+              position = position_dodge(width = -0.5)) +
+  geom_jitter(aes(color = response_var),
+              position = position_jitter(0.1), alpha = 0.4) +
+  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = Koppen, ymax = dplyr::lead(Koppen), fill = Climate), 
+                      alpha = 0.3, data = climate.summary) +
+  geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
+                      color = response_var),
+                      position = position_dodge(width = -0.5), data = climate.summary) +
+  geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
+  xlim(-100, 700) +
+  scale_fill_manual(values = c("#D55E00", "#56B4E9", "#009E73")) +
+  scale_color_manual(values = c("#00AFBB", "#E7B800"),
+                     guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  
+theme_classic()
+
+
+
+ggsave("site.difference.geom_pointrange.climate.shading.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       width = 10, height = 8, units = "in")
+
+
+
 
 
 # geom_jitter for TSF # 
@@ -391,177 +374,110 @@ ggplot(analyte_table_filter, aes(Percent_Difference, TSF, color = response_var))
   theme_classic()
 
 ggsave("site.difference.geom_pointrange.TSF.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
        width = 10, height = 8, units = "in")
 
 
 
-
-
-```
-
-
-
-
-
-```{r pairs test with MEB and JSC on 6/1/2023}
-# With Pair with MEB and JSC on 6/1/2023 # 
-Morgan_test <- metadata_long %>% 
-  group_by(response_var, Study_ID, Pair_JSC) %>% 
-  summarise(n = n(),
-            mean = mean(mean_concentration),
-            sd = sd(mean_concentration))
-
-
-# plot # 
-ggplot(summary, aes(x=Burn_Severity, y=mean, color=Feedstock))+
-  geom_point()+
-  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd))+
-  theme_classic()+
-  ylab("P Mobilized (%)")+ 
-  xlab("Burn Severity")+
-  scale_color_manual(values=c("#346648", "#dbb40d"))+
-  facet_grid(variable~Feedstock, scales="free")+
-  theme(text = element_text(size = 18), axis.text.x = element_text(angle=45, hjust = 1))+ theme(legend.position = "none")
-
-
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r for loop attempt}
-# Alan's code 
-for(i in c("Douglas-fir forest", "Mixed Conifer forest", "Mountain woodland", "Sagebrush shrubland")) {
-  print(c("#################### ANOVA ########################", i))
-  print(anova(lmer(PercC6 ~ Burn_Severity) + (1|Parent_ID), data = subset(data_all, Land_Coverage_Category == i)))
-  print("")
-  print(c("#################### By Burn Severity ########################", i))
-  print(summary(lmer(PercC6 ~ Burn_Severity + (1|Parent_ID), data = subset(data_all, Land_Coverage_Category == i))))
-  print("")
-}
-
-# Stack exhange attempt 1
-df <- data.frame(Yi0 =  1:10,
-                 Yi1 = 21:30,
-                 V1 = c(1,1,1,1,1,0,0,0,0,0),
-                 V2 = c(0,1,0,1,0,1,0,1,0,1))
-
-df %>%
-  summarise(across(V1:V2, 
-                ~ mean(df %>% 
-                         filter(.x == 1) %>%
-                         pull(Yi1), na.rm = T) -
-                  mean(df %>% 
-                         filter(.x == 0) %>%
-                         pull(Yi0), na.rm = T)))
-
-for(i in 1:10) {                                           
-  x1 <- i^2                                                
-  print(x1)                                                
-}
-
-x3 <- numeric()
-
-for(i in 1:10) {                                           
-  x3 <- c(x3, i^2)                                         
-}
-x3
-
-for(i in 1:ncol(iris_new1)) {                              # Head of for-loop
-  if(grepl("Width", colnames(iris_new1)[i])) {             # Logical condition
-    iris_new1[ , i] <- iris_new1[ , i] + 1000              # Code block
-  }
-}
-
-
-
-```
-
-
-```{r Analyte summary stats}
-
-# pivoting to make the responses in one column
-metadata_long <- metadata %>% 
-  pivot_longer(
-    cols = DOC_mg_C_L:STER_NH4,
-    names_to = "response_var",
-    values_to = "mean_concentration",
-    values_drop_na = TRUE
-  )
-
-# Generating the count of observations for each treatment by analyte
-MeanConc <- metadata_long %>%
-  group_by(Study_ID, Treatment, response_var, Climate) %>%
-  dplyr::summarize(Ne = sum(Treatment == "Burn"),
-                   Nc = sum(Treatment == "Unburn"),
-                   Xe = mean(mean_concentration[Treatment == "Burn"], na.rm = TRUE),
-                   Xc = mean(mean_concentration[Treatment == "Unburn"], na.rm = TRUE))
-
-
-# Calculating effect size/percent_difference and other stats that we want to plot 
-analyte_table <- MeanConc %>% 
-  select(-Treatment) %>% 
-  group_by(Study_ID, response_var, Climate) %>%
-  summarize(Ne = sum(Ne),
-            Nc = sum(Nc),
-            Xe = sum(Xe, na.rm = TRUE),
-            Xc = sum(Xc, na.rm = TRUE)) %>%
-  mutate(lnR = log(Xe/Xc),
-         percent_change = (((Xe-Xc)/Xc)*100),
-         diff = Xe-Xc)
-
-analyte_table$Xe <- format(analyte_table$Xe, scientific=F)
-analyte_table$Xc <- format(analyte_table$Xc, scientific=F)
-
-
-analyte_table <- analyte_table %>% 
-  mutate(across(c(Climate),
-                ~ifelse(Climate == "Temperate", "Temperate", "Mediterranean")))
-
-write.csv(analyte_table, "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/analyte_table.csv", row.names=FALSE)
-
-
-# Plot # This is all of the study IDs grouped together 
-analyte_table_filter <- analyte_table %>% 
-  filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate" | response_var == "NH4_mg_per_L_as_NH4"|
-         response_var == "TDN_mg_N_per_L" | response_var == "TN_mg_N_per_L")
-
-ggplot(analyte_table_filter, aes(x = percent_change, y = response_var, fill = response_var)) +
-  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+# boxplot grouped by Climate #
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y = Climate, fill = response_var)) +
   geom_boxplot() +
-  xlab("Percent Change") +
+  geom_jitter(shape=16, position=position_jitter(0.2)) +
+  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+  xlab("Percent Difference") +
   ylab("") +
-  xlim(-100, 500) +
-  theme(axis.text.y = element_blank()) +
+  xlim(-100, 700) + 
   scale_fill_brewer(palette="Set1",
-                     guide = guide_legend(title = "Analyte"),
-                     labels = c('DOC','NH4', 'NO3',
-                                'TDN', 'TN')) +
+                    guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  theme_classic() +
+  theme(axis.text.y = element_text(size = 20),
+        axis.text.x = element_text(size = 20),
+        axis.title.x = element_text(size = 25))
+
+ggsave("Climate.sites.difference.box.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       width = 10, height = 8, units = "in")
+
+# boxplot grouped by TSF #
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y=TSF, fill = response_var)) +
+  geom_boxplot() +
+  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+  xlab("Percent Difference") +
+  ylab("") +
+  xlim(-100, 700) + 
+  scale_fill_brewer(palette="Set1",
+                    guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  theme_classic() +
+  theme(axis.text.y = element_text(size = 20),
+        axis.text.x = element_text(size = 20),
+        axis.title.x = element_text(size = 25))
+
+ggsave("TSF.sites.difference.box.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       width = 10, height = 8, units = "in")
+
+
+# boxplot with all the sites in one box 
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, fill = response_var)) +
+  geom_boxplot() +
+  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+  xlab("Percent Difference") +
+  ylab("") +
+  theme(axis.text.y = element_blank()) +
+  scale_fill_brewer(palette="Set1") +
+  facet_wrap(~Study_ID, scales = "free") +
   theme_classic()
 
-ggsave("percent_change.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig"),
-       width = 10, height = 10, units = "in")
+ggsave("all.sites.difference.box.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       width = 25, height = 20, units = "in")
+
+# boxplot with sites broken up #
+ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, fill = response_var)) +
+  geom_vline(xintercept = 0, linewidth = 1.0, color = "red") +
+  geom_boxplot() +
+  xlab("Difference") +
+  ylab("") +
+  xlim(-2.5, 2.5) +
+  theme(axis.text.y = element_blank()) +
+  scale_fill_brewer(palette="Set1") +
+  facet_wrap(~Study_ID, scales = "free") +
+  theme_classic()
+
+ggsave("test.site.difference.box.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       width = 25, height = 20, units = "in")
+
+
 ```
 
 
 
 
 
-```{r}
 
-############################## other attempts that may be useful ####################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r graveyard}
+
+# other attempts that may be useful #
 # Plots attempts # 
 # pointplot with sd attempt #
 ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, color = Site, shape = response_var)) +
