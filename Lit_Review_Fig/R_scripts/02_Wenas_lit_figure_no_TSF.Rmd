@@ -2,6 +2,8 @@
 title: "02_Wenas_lit_figure_no_TSF"
 output: html_document
 date: "2023-06-15"
+editor_options: 
+  chunk_output_type: console
 ---
 
 The purpose of this script is do the same thing as 01_Wenas_lit_review_figure but without the TSF designation:
@@ -250,7 +252,8 @@ analyte_table_long <- analyte_table_combine %>%
 
 # filter out the only analytes that we want to include in the figure 
 analyte_table_filter <- analyte_table_long %>% 
-  filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate")
+  filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate",
+         Percent_Difference < 3000)
 
 # I want to pivot_longer to make all means in one column
 # pivoting to make the responses in one column
@@ -294,5 +297,56 @@ ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_va
   theme_classic()
 
 ggsave("site.difference.geom_pointrange.climate.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/02_Wenas_lit_figure_no_TSF"),
        width = 10, height = 8, units = "in")
+
+
+# attempt to do shading in the background # 
+ggplot(analyte_table_filter, aes(Percent_Difference, Koppen),
+              position = position_dodge(width = -0.5)) +
+  geom_jitter(aes(color = response_var),
+              position = position_jitter(0.1), alpha = 0.4) +
+  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = Koppen, ymax = dplyr::lead(Koppen), fill = Climate), 
+                      alpha = 0.3,
+                      linejoin = "bevel",
+                      data = climate.summary) +
+  geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
+                      color = response_var),
+                      position = position_dodge(width = -0.5), data = climate.summary) +
+  geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
+  xlim(-100, 700) +
+  scale_fill_manual(values = c("#D55E00", "#56B4E9", "#009E73")) +
+  scale_color_manual(values = c("#00AFBB", "#E7B800"),
+                     guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  
+theme_classic()
+
+
+
+ggsave("site.difference.geom_pointrange.climate.shading.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/02_Wenas_lit_figure_no_TSF"),
+       width = 10, height = 8, units = "in")
+
+
+# geom_jitter for climate facet # 
+ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_var),
+              position = position_dodge(width = -0.5)) +
+  geom_jitter(position = position_jitter(0.1), alpha = 0.4) +
+  geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
+                      color = response_var),
+                      position = position_dodge(width = -0.5), data = climate.summary) +
+  geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
+  facet_grid(~Climate ~ .) +
+  xlim(-100, 700) +
+  scale_color_manual(values = c("#00AFBB", "#E7B800"),
+                     guide = guide_legend(title = "Analyte"),
+                     labels = c('DOC', vn)) +
+  theme_classic()
+
+ggsave("site.difference.geom_pointrange.climate.facet.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/02_Wenas_lit_figure_no_TSF"),
+       width = 10, height = 8, units = "in")
+
+
+```

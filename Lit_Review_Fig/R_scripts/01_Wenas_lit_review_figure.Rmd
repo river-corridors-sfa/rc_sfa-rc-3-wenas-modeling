@@ -265,7 +265,7 @@ analyte_table_long_2 <- analyte_table_filter %>%
 # Calculating the standard deviation for all of the percent_differences
 # calculating the mean percent_difference by climate 
 climate.summary <- analyte_table_filter %>%
-  group_by(Koppen, response_var, Climate) %>%
+  group_by(Koppen, response_var, Climate, TSF) %>%
   summarise(
     sd = sd(Percent_Difference, na.rm = TRUE),
     Percent_Difference = mean(Percent_Difference)
@@ -274,10 +274,10 @@ climate.summary <- analyte_table_filter %>%
 
 # Calculating the standard deviation for all of the means 
 # calculating the mean percent_difference by TSF
-TSF.summary <- analyte_table_long_2 %>%
+TSF.summary <- analyte_table_filter %>%
   group_by(TSF, response_var) %>%
   summarise(
-    sd = sd(Value*100, na.rm = TRUE),
+    sd = sd(Percent_Difference, na.rm = TRUE),
     Percent_Difference = mean(Percent_Difference)
   )
 
@@ -291,7 +291,7 @@ TSF.summary <- analyte_table_long_2 %>%
 vn = expression(paste(""*N*O[3]^"-"))
 
 # geom_jitter for climate # 
-ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_var),
+ ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, shape = TSF, color = response_var),
               position = position_dodge(width = -0.5)) +
   geom_jitter(position = position_jitter(0.1), alpha = 0.4) +
   geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
@@ -304,8 +304,8 @@ ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_va
                      labels = c('DOC', vn)) +
   theme_classic()
 
-ggsave("site.difference.geom_pointrange.climate.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+ggsave("site.difference.geom_pointrange.climate.TSF.pdf",
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
        width = 10, height = 8, units = "in")
 
 # geom_jitter for climate facet # 
@@ -324,7 +324,7 @@ ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_va
   theme_classic()
 
 ggsave("site.difference.geom_pointrange.climate.facet.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
        width = 10, height = 8, units = "in")
 
 # attempt to do shading in the background # 
@@ -349,7 +349,7 @@ theme_classic()
 
 
 ggsave("site.difference.geom_pointrange.climate.shading.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
        width = 10, height = 8, units = "in")
 
 
@@ -374,7 +374,7 @@ ggplot(analyte_table_filter, aes(Percent_Difference, TSF, color = response_var))
   theme_classic()
 
 ggsave("site.difference.geom_pointrange.TSF.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
        width = 10, height = 8, units = "in")
 
 
@@ -396,7 +396,7 @@ ggplot(analyte_table_filter, aes(x = Percent_Difference, y = Climate, fill = res
         axis.title.x = element_text(size = 25))
 
 ggsave("Climate.sites.difference.box.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
        width = 10, height = 8, units = "in")
 
 # boxplot grouped by TSF #
@@ -415,7 +415,7 @@ ggplot(analyte_table_filter, aes(x = Percent_Difference, y=TSF, fill = response_
         axis.title.x = element_text(size = 25))
 
 ggsave("TSF.sites.difference.box.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
        width = 10, height = 8, units = "in")
 
 
@@ -431,7 +431,7 @@ ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, fill 
   theme_classic()
 
 ggsave("all.sites.difference.box.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
        width = 25, height = 20, units = "in")
 
 # boxplot with sites broken up #
@@ -447,7 +447,7 @@ ggplot(analyte_table_filter, aes(x = Percent_Difference, y = response_var, fill 
   theme_classic()
 
 ggsave("test.site.difference.box.pdf",
-       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots"),
+       path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
        width = 25, height = 20, units = "in")
 
 
