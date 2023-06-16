@@ -99,8 +99,8 @@ unique(metadata$Time_Since_Fire)
 # JSC solution to this mutate 
 metadata <- metadata %>% 
   mutate(metadata, TSF = ifelse(grepl("12-13", Time_Since_Fire), ">10 years",
-                              ifelse(grepl("0|0-1|0-2|1 month|1|2|3|1-3|1-2", Time_Since_Fire), "0-3 years",
-                              ifelse(grepl("4|5", Time_Since_Fire), "4-5 years",
+                              ifelse(grepl("0|0-1|0-2|1 month|1|2|1-2", Time_Since_Fire), "0-2 years",
+                              ifelse(grepl("3|4|5", Time_Since_Fire), "3-5 years",
                               ifelse(grepl("6|7|8|9|10", Time_Since_Fire), "6-10 years",
                               ifelse(grepl("Pre-fire", Time_Since_Fire), "Pre-Fire",
                               ifelse(grepl("1-13 years post fire|Post-fire", Time_Since_Fire), "Post-Fire", "Other")))))))
@@ -358,7 +358,7 @@ ggsave("site.difference.geom_pointrange.climate.shading.pdf",
 
 # geom_jitter for TSF # 
 # Creating an order in which I want to plot the y-axis
-level_order <- c('0-3 years', '4-5 years', '>10 years') 
+level_order <- c('0-2 years', '3-5 years', '>10 years') 
 
 ggplot(analyte_table_filter, aes(Percent_Difference, TSF, color = response_var)) +
   geom_jitter(position = position_jitter(0.2), alpha = 0.4) +
