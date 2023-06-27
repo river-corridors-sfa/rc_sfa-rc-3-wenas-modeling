@@ -33,6 +33,9 @@ color_scheme <- PNWColors::pnw_palette("Bay", 4)
 ## Set data path
 path <- "https://drive.google.com/drive/folders/1tl1Kf0PxVHbS7wPL4W071pvS1Af3Ji1i"
 local_path <- "data/new_model/"
+
+## Set a standardized alpha value for all plots
+set_alpha = 0.8
 ```
 
 First up, let's download the data from Drive to local so we can work with it. We'll put it in pr_work/data/new_model. Note that I'm commenting this one out to speed up rerunning the script
@@ -124,17 +127,20 @@ severity_medians_clean <- severity_medians_raw %>%
 
 This figure is saved as "pr_work/figures/230627_severity_medians.png"
 
+**NOTE: final figures will also be saved to "../figures/.."
+
 ```{r Create median severity plots}
 
 ## Set color scheme
-severity_colors = c("#F5C63C", "#F47F6B", "#BB5098")
+#severity_colors = c("#F5C63C", "#F47F6B", "#BB5098")
+severity_colors = c("#3B9AB2", "#E1AF00", "#F21A00")
 
 plot_severity_medians <- function(var, y_label){
   
   base_value = severity_medians_base %>% select({{var}}) %>% pull()
   
   ggplot(severity_medians_clean, (aes(percent, {{var}}, fill = severity))) + 
-    geom_col(position = "dodge", alpha = 0.8) + 
+    geom_col(position = "dodge", alpha = set_alpha) + 
     geom_hline(yintercept = base_value, linetype = "dashed") + 
     scale_fill_manual(values = severity_colors) + 
     labs(x = "% of watershed burned", y = y_label, fill = "")
@@ -146,6 +152,7 @@ plot_grid(plot_severity_medians(flow, "Flow (??)"),
           plot_severity_medians(doc_mg_l, "DOC (mg/L)"), 
           ncol = 1)
 ggsave("figures/230627_severity_medians.png", width = 6, height = 10)
+ggsave("../figures/230627_severity_medians.png", width = 6, height = 10)
 
 ```
 
@@ -174,7 +181,7 @@ plot_severity_means <- function(var, y_label){
   base_value = severity_means_base %>% select({{var}}) %>% pull()
   
   ggplot(severity_means_clean, (aes(percent, {{var}}, fill = severity))) + 
-    geom_col(position = "dodge", alpha = 0.8) + 
+    geom_col(position = "dodge", alpha = set_alpha) + 
     geom_hline(yintercept = base_value, linetype = "dashed") + 
     scale_fill_manual(values = severity_colors) + 
     labs(x = "% of watershed burned", y = y_label, fill = "")
@@ -217,7 +224,7 @@ severity_means_perc <- severity_means_clean %>%
  
 plot_percent_change <- function(data, var, y_label){
     ggplot(data, aes(percent, {{var}}, fill = severity)) + 
-    geom_col(position = "dodge", alpha = 0.8) + 
+    geom_col(position = "dodge", alpha = set_alpha) + 
     scale_fill_manual(values = severity_colors) + 
     labs(x = "% of watershed burned", y = y_label, fill = "")
 }
