@@ -1,0 +1,257 @@
+---
+title: "Wenas modeling fire severity figures"
+author: "PR"
+date: "2023-06-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, 
+                      message = F, 
+                      warning = F)
+```
+
+### Description
+
+This markdown is mostly just a script to create two figures for the Wenas model outputs. Doing this in markdown because 1) good to document decisions more thoroughly/readably than in comments, and 2) people seem to love RMD for some reason. I don't get it...
+
+**IMPORTANT: if source files change, change eval to TRUE for the `Pull data from G Drive` chunk to pull updated data!**
+
+```{r Setup}
+require(pacman)
+p_load(tidyverse,
+       PNWColors,
+       plotly,
+       cowplot,
+       janitor, 
+       googledrive)
+
+## Set ggplot theme and color palette
+theme_set(theme_bw())
+color_scheme <- PNWColors::pnw_palette("Bay", 4)
+
+## Set data path
+path <- "https://drive.google.com/drive/folders/1tl1Kf0PxVHbS7wPL4W071pvS1Af3Ji1i"
+local_path <- "data/new_model/"
+
+## Set a standardized alpha value for all plots
+set_alpha = 0.8
+```
+
+First up, let's download the data from Drive to local so we can work with it. We'll put it in pr_work/data/new_model. Note that I'm commenting this one out to speed up rerunning the script
+
+
+```{r Pull data from G Drive, eval = F}
+
+## Authorize GDrive
+options(gargle_oauth_email = "peter.regier@pnnl.gov")
+
+## Pull files
+files <- drive_ls(path) %>% 
+  filter(grepl("_summar", name)) %>% 
+  filter(!grepl("_old", name))
+
+## Download files to /data
+for(i in 1:nrow(files)){
+  drive_download(files$id[[i]], paste0(local_path, files$name[[i]]), overwrite = T)
+}
+
+print(paste(nrow(files), "files downloaded"))
+```
+
+
+Now that we've downloaded files, let's start working with the percentage burned files, which all contain the string "_PER_". We are using both means and medians to understand changes, because they differ markedly. At some point as the story coalesces, one will be scrapped / sent to supplemental. We'll start by making a dataset that contains actual values (not percent changes). Here, we use base_unburned as a common reference (represented as a horizontal line).
+
+```{r Import percentage burned files}
+
+burn_perc_files <- list.files(local_path, pattern = "_PER_")
+
+## Now they're local, read them in and label em
+read_medians <- function(file){
+  read_csv(paste0(local_path, file)) %>% 
+    filter(metric == "median") %>% 
+    mutate(percent = stringr::word(file, 4, 4, sep = "_"), 
+           severity = str_sub(stringr::word(file, 5, 5, sep = "_"), start = 1, end = -5)) %>% 
+    select(scenario, percent, severity, metric, flow, sed_con, nitrate_mgL, doc_mgL) %>% 
+    clean_names()
+}
+
+## Now they're local, read them in and label em
+read_means <- function(file){
+  read_csv(paste0(local_path, file)) %>% 
+    filter(metric == "mean") %>% 
+    mutate(percent = stringr::word(file, 4, 4, sep = "_"), 
+           severity = str_sub(stringr::word(file, 5, 5, sep = "_"), start = 1, end = -5)) %>% 
+    select(scenario, percent, severity, metric, flow, sed_con, nitrate_mgL, doc_mgL) %>% 
+    clean_names()
+}
+
+## This gives us a row for each severity, and by calling distinct at the end, we both ensure all base_unburned rows are equal, and remove all the duplicates
+severity_medians_raw <- burn_perc_files %>% 
+  map(read_medians) %>% 
+  bind_rows() 
+
+severity_means_raw <- burn_perc_files %>% 
+  map(read_means) %>% 
+  bind_rows() 
+
+
+```
+
+Let's format our dataset for plotting and construct plots
+
+```{r Format severity data}
+
+severity_medians_base <- severity_medians_raw %>% 
+  filter(scenario == "base_unburned") %>% 
+  select(-c(percent, severity)) %>% 
+  slice(1)
+
+## Not to brag, but I came up with as.factor(as.numeric) on my own!
+severity_medians_clean <- severity_medians_raw %>% 
+  filter(scenario != "base_unburned") %>% 
+  mutate(percent = as.factor(as.numeric(percent))) %>% #simple way to reorder as a factor
+  mutate(severity = fct_relevel(severity, c("LOW", "MOD", "HIGH")))
+  
+## Check orders
+#levels(severity_clean$percent)
+#levels(severity_clean$severity)
+
+## Test plot for diagnosing any pipeline issues
+# ggplot(severity_clean, (aes(percent, flow, fill = severity))) + 
+#   geom_col(position = "dodge")
+
+```
+
+### Median plots for changes based on fire severity
+
+This figure is saved as "pr_work/figures/230627_severity_medians.png"
+
+**NOTE: final figures will also be saved to "../figures/.."
+
+```{r Create median severity plots}
+
+## Set color scheme
+#severity_colors = c("#F5C63C", "#F47F6B", "#BB5098")
+severity_colors = c("#3B9AB2", "#E1AF00", "#F21A00")
+
+plot_severity_medians <- function(var, y_label){
+  
+  base_value = severity_medians_base %>% select({{var}}) %>% pull()
+  
+  ggplot(severity_medians_clean, (aes(percent, {{var}}, fill = severity))) + 
+    geom_col(position = "dodge", alpha = set_alpha) + 
+    geom_hline(yintercept = base_value, linetype = "dashed") + 
+    scale_fill_manual(values = severity_colors) + 
+    labs(x = "% of watershed burned", y = y_label, fill = "")
+}
+
+plot_grid(plot_severity_medians(flow, "Flow (??)"), 
+          plot_severity_medians(sed_con, "TSS (??)"), 
+          plot_severity_medians(nitrate_mg_l, "NO3 (mg/L)"), 
+          plot_severity_medians(doc_mg_l, "DOC (mg/L)"), 
+          ncol = 1)
+ggsave("figures/230627_severity_medians.png", width = 6, height = 10)
+ggsave("../figures/230627_severity_medians.png", width = 6, height = 10)
+
+```
+
+
+
+### Mean plots for changes based on fire severity
+
+Because means and medians show very different trends, let's also look at means. This figure is saved as "pr_work/figures/230627_severity_means.png". One interpretation of this would be that, because means are influenced by extreme values (ie increased flashiness), higher burn severity has higher means, but because higher burnseverity also likely relates to 
+
+```{r Create mean severity plots}
+
+severity_means_base <- severity_means_raw %>% 
+  filter(scenario == "base_unburned") %>% 
+  select(-c(percent, severity)) %>% 
+  slice(1)
+
+## Not to brag, but I came up with as.factor(as.numeric) on my own!
+severity_means_clean <- severity_means_raw %>% 
+  filter(scenario != "base_unburned") %>% 
+  mutate(percent = as.factor(as.numeric(percent))) %>% #simple way to reorder as a factor
+  mutate(severity = fct_relevel(severity, c("LOW", "MOD", "HIGH")))
+
+
+plot_severity_means <- function(var, y_label){
+  
+  base_value = severity_means_base %>% select({{var}}) %>% pull()
+  
+  ggplot(severity_means_clean, (aes(percent, {{var}}, fill = severity))) + 
+    geom_col(position = "dodge", alpha = set_alpha) + 
+    geom_hline(yintercept = base_value, linetype = "dashed") + 
+    scale_fill_manual(values = severity_colors) + 
+    labs(x = "% of watershed burned", y = y_label, fill = "")
+}
+
+plot_grid(plot_severity_means(flow, "Flow (??)"), 
+          plot_severity_means(sed_con, "TSS (??)"), 
+          plot_severity_means(nitrate_mg_l, "NO3 (mg/L)"), 
+          plot_severity_means(doc_mg_l, "DOC (mg/L)"), 
+          ncol = 1)
+ggsave("figures/230627_severity_means.png", width = 6, height = 10)
+
+```
+
+### % change figures
+
+We also want to calculate percent changes because this is the metric that we'll be using to visualize changes in the other scenarios, which don't have a common unburned reference value like burn severity. First, we'll need to calculate % differences, then we'll create equivalent plots to those above. We'll use a standardized percent change calculation of 
+**Percent Change: ( Burn - Original ) / Original * 100**
+
+```{r Calculate percent changes}
+
+## Create a function to calculate percent change
+percent_change = function(var, baseline){
+  (({{var}} - {{baseline}}) / {{baseline}}) * 100
+}
+
+## First, calculate percentages for medians
+severity_medians_perc <- severity_medians_clean %>% 
+  mutate(flow_perc = percent_change(flow, severity_medians_base$flow), 
+         sed_perc = percent_change(sed_con, severity_medians_base$sed_con), 
+         no3_perc = percent_change(nitrate_mg_l, severity_medians_base$nitrate_mg_l), 
+         doc_perc = percent_change(doc_mg_l, severity_medians_base$doc_mg_l))
+  
+## Second, calculate percentages for means
+severity_means_perc <- severity_means_clean %>% 
+  mutate(flow_perc = percent_change(flow, severity_means_base$flow), 
+         sed_perc = percent_change(sed_con, severity_means_base$sed_con), 
+         no3_perc = percent_change(nitrate_mg_l, severity_means_base$nitrate_mg_l), 
+         doc_perc = percent_change(doc_mg_l, severity_means_base$doc_mg_l))
+ 
+plot_percent_change <- function(data, var, y_label){
+    ggplot(data, aes(percent, {{var}}, fill = severity)) + 
+    geom_col(position = "dodge", alpha = set_alpha) + 
+    scale_fill_manual(values = severity_colors) + 
+    labs(x = "% of watershed burned", y = y_label, fill = "")
+}
+
+```
+
+### Plot % change by median
+
+```{r plot percent change by median}
+
+plot_grid(plot_percent_change(severity_medians_perc, flow_perc, "Flow (%)"), 
+          plot_percent_change(severity_medians_perc, sed_perc, "TSS (%)"), 
+          plot_percent_change(severity_medians_perc, no3_perc, "NO3 (%)"), 
+          plot_percent_change(severity_medians_perc, doc_perc, "DOC (%)"), 
+          ncol = 1)
+ggsave("figures/230627_severity_medians_percent.png", width = 6, height = 10)
+```
+
+### Plot % change by mean
+
+```{r plot percent change by mean}
+
+plot_grid(plot_percent_change(severity_means_perc, flow_perc, "Flow (%)"), 
+          plot_percent_change(severity_means_perc, sed_perc, "TSS (%)"), 
+          plot_percent_change(severity_means_perc, no3_perc, "NO3 (%)"), 
+          plot_percent_change(severity_means_perc, doc_perc, "DOC (%)"), 
+          ncol = 1)
+ggsave("figures/230627_severity_means_p.png", width = 6, height = 10)
+```
+

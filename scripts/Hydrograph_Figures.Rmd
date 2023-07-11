@@ -1,0 +1,156 @@
+---
+title: "Hydrograph_Figures"
+author: "AMP"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Set Up Your Environment 
+
+Get ready to have a R party! 
+
+```{r setup, include=FALSE}
+ knitr::opts_chunk$set(echo = TRUE)
+
+ # load packages
+ require(pacman)
+ pacman::p_load(tidyverse, # keep things tidy!!
+                googlesheets4, # read_sheet
+                googledrive, # google drive access
+                ggplot2, #plotting
+                PNWColors ) # pretty colors 
+
+ #double check your wd. should be ../rc_sfa-rc-3-wenas-modeling/scripts
+ #if not you need to do new relative file pathing!
+
+ getwd()
+
+```
+
+## Read in Model Outputs
+
+- Run this chunk if you need to re-import the output scenarios, i.e. if they've changed etc. This is currently pulling from the New Model (DOC) folder updated May 12, 2023.
+
+- If that's the current version of the model outputs you want, # comment this out, then go to the next chunk...
+ 
+``` {r read in data, echo=FALSE}
+ ## Set GDrive URL for files
+
+ directory = "https://drive.google.com/drive/folders/1tl1Kf0PxVHbS7wPL4W071pvS1Af3Ji1i"
+
+ read_data <- function(data){
+   # First, scrape scenario name from file name
+   scenario <- stringr::word(data, sep= fixed(".c"))
+   # Second, read in data
+   read.csv(file = data) %>%
+     mutate(scenario = scenario)
+  }
+
+ ## Create a list of files to download
+ # Grab the files that are the full simulation results, NOT the stat_summaries
+ files <- drive_ls(directory) %>%
+   filter(grepl("_results", name))
+
+ ## Download files to local (don't worry, we'll delete 'em in a sec)
+ lapply(files$id, drive_download, overwrite = TRUE)
+
+ ## Read in data
+ all_outputs <- files$name %>%
+   map(read_data) %>%
+   bind_rows()
+
+ all_outputs$dates <- as.POSIXct(all_outputs$dates)
+
+ key = googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1fM_JKnCXQ9uUFaplQ90YwZevvnrnpSp_R26KsN8tHdM/edit#gid=0", sheet = 1)
+
+ all_outputs_wmeta <- left_join(all_outputs, key, by=c("scenario"))
+
+ ## Clean up local (delete downloaded files)
+ file.remove(c(files$name))
+
+# Save the outputs as an rds file to easily load back in and not have to wait 5 minutes to download the datasets from Google Drive.
+
+write_rds(all_outputs_wmeta, "../New_DOC_Model_Outputs_20230512_Combined_with_Metadata.rds")
+
+```
+
+## Load Model Outputs (if Needed)
+
+Comment out if you run the chunk before. 
+
+```{r load rds for all model outputs, echo = FALSE}
+
+ all_outputs_wmeta <- read_rds("../New_DOC_Model_Outputs_20230512_Combined_with_Metadata.rds")
+
+```
+
+## Select Scenario to plot
+
+We are interested in looking at the flow scenarios with a hydrograph display to show specific hydrograph case comparisons for the threshold behaviors in flow specifically. 
+We aim to plot the flow scenarios (m3/s) in post-fire year & a base case for comparison.  
+
+This chunk is to select the scenarios we care about, and get the data ready to plot. 
+
+Evan's Canyon Fire Info: 
+
+https://inciweb.nwcg.gov/incident-information/wases-evans-canyon-fire
+
+https://www.wsp.wa.gov/2020/09/01/state-fire-mobilization-authorized-for-the-evans-canyon-fire/
+
+
+```{r Select Data, echo = TRUE}
+
+fire_start = as.POSIXct("2019-08-31") # model fire started in 2019 # 
+
+flow_outputs <- all_outputs_wmeta %>%
+  filter(ScenarioGroup %in% c("Flow Pathways","Base Case")) %>% 
+  filter(between(dates, fire_start, as.POSIXct("2020-08-31"))) %>%
+  select(dates, scenario, ShortScenario, Description, flow_m3s_fire, flow_m3s_nofire, flow_m3s_.chg) %>%
+  mutate(per_change= ((flow_m3s_fire- flow_m3s_nofire) / flow_m3s_nofire) * 100 )
+
+```
+
+## Plotting
+
+```{r Plotting, echo=TRUE}
+
+flow_colors = c("#9C964A", "#2d2926", "#81a9ad", "#537380") 
+flow_fire_colors= pnw_palette("Sunset", 3 , type = "discrete")
+  #c("#02401B", "#81A88D", "#9C964A") #inspired by wesanderson R package
+
+flow_hydrograph <- flow_outputs %>%
+  ggplot() +
+  geom_line(aes(x = as.Date(dates), y=flow_m3s_fire, color= Description, linetype = Description), position= position_jitterdodge()) +  
+  scale_color_manual(values = flow_colors)  +
+  scale_linetype_manual(values = c("solid", "longdash", "solid", "longdash"))+
+  scale_linewidth(range = c(0.2, 1)) +
+  geom_vline(xintercept = fire_start,linetype="dashed",color="maroon")+
+  ylab("Flow (m3/s)")+
+  xlab("Simulation Month")+
+  scale_x_date(breaks= "2 months", date_labels = "%b")+
+  theme_classic()+
+  theme(legend.position = "bottom")+
+  guides(color= guide_legend(nrow= 2))
+
+flow_hydrograph
+
+cowplot::save_plot("../figures/flow_scenarios_hydrograph.jpeg", flow_hydrograph, base_height = 4, base_width = 8, dpi=600)
+
+flow_perchange_hydrograph <- flow_outputs %>%
+  ggplot() +
+  geom_line(aes(x = dates, y=per_change, color= Description, linetype = Description), position= position_jitterdodge()) +   
+  scale_color_manual(values = flow_colors)  +
+  scale_linetype_manual(values = c("solid", "longdash", "solid", "longdash"))+
+  scale_linewidth(range = c(0.2, 1)) +
+  ylab("Change in Flow (%)")+
+  theme_classic() +
+  theme(legend.position = "bottom")+
+  guides(color= guide_legend(nrow= 2))
+
+flow_perchange_hydrograph
+
+cowplot::save_plot("../figures/flow_scenarios_perchange_hydrograph.jpeg", flow_perchange_hydrograph, base_height = 4, base_width = 8, dpi=600)
+
+
+```
+
