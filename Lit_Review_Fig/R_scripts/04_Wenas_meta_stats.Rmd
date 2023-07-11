@@ -1,5 +1,5 @@
 ---
-title: "03_Wenas_meta_stats"
+title: "04_Wenas_meta_stats"
 output: html_document
 date: "2023-07-11"
 editor_options: 
@@ -18,6 +18,8 @@ library(rstatix)
 library(ggpubr)
 library(ggplot2)
 library(coin)
+library(dotwhisker)
+library(dplyr)
 
 ```
 
@@ -135,50 +137,58 @@ The p-value of the test is 3.378e, which is less than the significance level alp
 
 
 
-#### STEP 5 calculate effect size #### 
+#### STEP 5 effect size #### 
+Do the confidence intervals overlap with 0 or not. 
 ```{r}
-percent_difference_test <- percent_difference %>% 
-  filter(Study_ID != "12") %>% 
-  group_by(Study_ID, response_var, Koppen, TSF) %>%
-  mutate(lnR1 = (log(Xe1/Xc)),
-         lnR2 = log(Xe2/Xc),
-         lnR3 = log(Xe3/Xc),
-         lnR4 = log(Xe4/Xc),
-         lnR5 = log(Xe5/Xc),
-         lnR6 = log(Xe6/Xc),
-         lnR7 = log(Xe7/Xc),
-         lnR8 = log(Xe8/Xc),
-         lnR9 = log(Xe9/Xc),
-         lnR10 = log(Xe10/Xc))
+rm(list=ls(all=T)) #this clears your Environment
 
 
-# This is doing the same thing as analyte_table_means chunk but adding in the multiple controls for study_ID_12
+library(tidyverse)
+library(rstatix)
+library(ggpubr)
+library(ggplot2)
+library(coin)
 
-brie_test <- percent_difference %>% 
-  filter(Study_ID == "12") %>% 
-  group_by(Study_ID, response_var, Koppen, TSF) %>%
-  summarize(Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
-            Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
-            Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
-            Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
-            Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
-            Xc123 = sum(Xc[Pair_JSC == "Control 1, 2, and 3"], na.rm = TRUE),
-            Xc4 = sum(Xc[Pair_JSC == "Control 4"], na.rm = TRUE),
-            Xc5 = sum(Xc[Pair_JSC == "Control 5"], na.rm = TRUE)) 
+effect_size <- read_csv("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/Output_for_analysis/analyte_table_effect_DOC_no3.csv")
 
+effect_size_DOC <- effect_size %>% 
+  filter(response_var == "DOC_mg_C_L")
 
-
-
-
+effect_size_NO3 <- effect_size %>% 
+  filter(response_var == "NO3_mg_per_L_as_Nitrate")
 
 
 
 ```
 
+### DOC ### 
+```{r DOC}
+mDOC <- lm(Effect_size ~ Koppen, data = effect_size_DOC)
 
+dwplot(mDOC,
+       vline = geom_vline(
+         xintercept = 0,
+         color = "grey",
+         linetype = 2)) %>% 
+  relabel_predictors(c(KoppenCsa = "Csa",
+                       KoppenCsb = "Csb",
+                       KoppenDfb = "Dfb",
+                       KoppenDfc = "Dfc")) +
+  theme_bw(base_size = 4) +
+  xlab("Coefficient Estimate") +
+  ylab("") +
+  geom_vline(xintercept = 0,
+             color = "grey",
+             linetype = 2) +
+  ggtitle("Predicting Effect Size")
+  theme(plot.title = element_text(face = "bold"),
+        legend.position = c(0.007, 0.01),
+        legend.justification = c(0, 0),
+        legend.background = element_rect(colour = "grey80"),
+        legend.title = element_blank(),
+        axis.text.y = element_text(size = 20))
 
-
-
+```
 
 
 
