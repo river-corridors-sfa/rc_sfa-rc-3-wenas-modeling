@@ -1,5 +1,5 @@
 ---
-title: "02_Wenas_practice_generating_output_df"
+title: "01_Wenas_percent_difference"
 output: html_document
 date: "2023-05-02"
 editor_options: 
@@ -99,16 +99,22 @@ unique(metadata$Time_Since_Fire)
 
 # JSC solution to this mutate 
 metadata <- metadata %>% 
-  mutate(metadata, TSF = ifelse(grepl("12-13", Time_Since_Fire), ">10 years",
+  mutate(metadata, TSF = ifelse(grepl("12-13|13", Time_Since_Fire), ">10 years",
+                              ifelse(grepl("6|7|8|9|10", Time_Since_Fire), "6-10 years",
                               ifelse(grepl("0|0-1|1", Time_Since_Fire), "0-1 years",
                               ifelse(grepl("2|3", Time_Since_Fire), "2-3 years",       
                               ifelse(grepl("4|5", Time_Since_Fire), "4-5 years",
-                              ifelse(grepl("6|7|8|9|10", Time_Since_Fire), "6-10 years",
                               ifelse(grepl("Pre-fire", Time_Since_Fire), "Pre-Fire",
                               ifelse(grepl("1-13 years post fire|Post-fire", Time_Since_Fire), "Post-Fire", "Other"))))))))
 
 # No study ID's should be classified as Other #
 unique(metadata$TSF)
+
+# comparing to see if this above script actually worked 
+a <- metadata$Time_Since_Fire
+b <- metadata$TSF
+
+c <- cbind(a,b)
 ```
 
 
@@ -227,6 +233,7 @@ analyte_table_percent_change <-analyte_table_percent_change %>%
 analyte_table_combine <- analyte_table_percent_change %>% 
   add_row(brie_test_stats)
 
+
 # Adding a broader climate variable that will group the codes into climates that people actually understand #
 unique(analyte_table_combine$Koppen)
 
@@ -236,6 +243,7 @@ analyte_table_combine <- analyte_table_combine %>%
                               ifelse(grepl("BSk", Koppen), "Arid",
                               ifelse(grepl("As|Af|Am", Koppen), "Tropical",
                               ifelse(grepl("ET|EF", Koppen), "Polar", "Other"))))))
+
 
 # export dataframe 
 write.csv(analyte_table_combine, "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/Output_for_analysis/analyte_table.csv", row.names=FALSE)
@@ -254,6 +262,9 @@ analyte_table_long <- analyte_table_combine %>%
 analyte_table_filter <- analyte_table_long %>% 
   filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate") %>% 
   filter(Percent_Difference < 3000)
+
+# export dataframe 
+write.csv(analyte_table_filter, "~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/Output_for_analysis/analyte_table_DOC_no3.csv", row.names=FALSE)
 
 # I want to pivot_longer to make all means in one column
 # pivoting to make the responses in one column
@@ -307,10 +318,10 @@ vn = expression(paste(""*N*O[3]^"-"))
 # geom_jitter for climate # 
 ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_var),
               position = position_dodge(width = -0.5)) +
-  geom_jitter(position = position_jitter(0.1), alpha = 0.4) +
+  geom_jitter(position = position_jitter(0.1), alpha = 0.4, size = 3) +
   geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
                       color = response_var),
-                      position = position_dodge(width = -0.5), data = climate.summary) +
+                      position = position_dodge(width = -0.5), size = 1.5, data = climate.summary) +
   geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
   xlim(-100, 700) +
   ylab("Koppen (Climate Classification)") +
@@ -335,10 +346,12 @@ ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_va
                      guide = guide_legend(title = "Analyte"),
                      labels = c('DOC', vn)) +
   theme_classic() +
-  theme(axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 15),
-        axis.title.x = element_text(size = 20),
-        axis.title.y = element_text(size = 20))
+  theme(axis.text.x = element_text(size = 30),
+        axis.text.y = element_text(size = 30),
+        axis.title.x = element_text(size = 40),
+        axis.title.y = element_text(size = 35),
+        legend.text = element_text(size = 30),
+        legend.position = c(0.9, 0.65))
 
 ggsave("site.difference.geom_pointrange.climate.pdf",
        path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
@@ -347,10 +360,10 @@ ggsave("site.difference.geom_pointrange.climate.pdf",
 # geom_jitter for climate and TSF # 
 ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, shape = TSF, color = response_var),
               position = position_dodge(width = -0.5)) +
-  geom_jitter(position = position_jitter(0.1), alpha = 0.4) +
+  geom_jitter(position = position_jitter(0.1), alpha = 0.4, size = 3) +
   geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
                       color = response_var),
-                      position = position_dodge(width = -0.5), data = climate.TSF.summary) +
+                      position = position_dodge(width = -0.5),  , data = climate.TSF.summary) +
   geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
   xlim(-100, 700) +
   ylab("Koppen (Climate Classification)") +
@@ -437,17 +450,26 @@ ggsave("site.difference.geom_pointrange.climate.shading.pdf",
 level_order <- c('0-1 years', '2-3 years', '>10 years') 
 
 ggplot(analyte_table_filter, aes(Percent_Difference, TSF, color = response_var)) +
-  geom_jitter(position = position_jitter(0.2), alpha = 0.4) +
+  geom_jitter(position = position_jitter(0.2), alpha = 0.4, size = 3) +
   geom_pointrange(aes(xmin = Percent_Difference - sd, xmax = Percent_Difference + sd, 
                       color = response_var),
-                      position = position_dodge(width = -0.5), data = TSF.summary) +
+                      position = position_dodge(width = -0.5), size = 1.5, data = TSF.summary) +
   geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
   scale_y_discrete(limit = level_order) +
   xlim(-100, 850) +
+  xlab("Percent Difference (%)") +
+  ylab("Time Since Fire") +
   scale_color_manual(values = c("#00AFBB", "#E7B800"),
                      guide = guide_legend(title = "Analyte"),
                      labels = c('DOC', vn)) +
-  theme_classic()
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 30),
+        axis.text.y = element_text(size = 30),
+        axis.title.x = element_text(size = 40),
+        axis.title.y = element_text(size = 40),
+        legend.title = element_text(size = 30),
+        legend.text = element_text(size = 30),
+        legend.position = c(0.6, 0.8))
 
 ggsave("site.difference.geom_pointrange.TSF.pdf",
        path = ("~/GitHub/rc_sfa-rc-3-wenas-modeling/Lit_Review_Fig/initial_plots/01_Wenas_lit_review_figure"),
