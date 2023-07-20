@@ -29,11 +29,13 @@ p_load(tidyverse,
        plotly,
        cowplot,
        janitor, 
+       googlesheets4,
        googledrive)
 
 ## Set data paths
 gdrive_path <- "https://drive.google.com/drive/folders/1tl1Kf0PxVHbS7wPL4W071pvS1Af3Ji1i"
 local_path <- "pr_work/data/new_model/"
+key <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1fM_JKnCXQ9uUFaplQ90YwZevvnrnpSp_R26KsN8tHdM/edit#gid=0", sheet = 1)
 
 ## Authorize GDrive
 options(gargle_oauth_email = "peter.regier@pnnl.gov")
@@ -48,12 +50,8 @@ files <- drive_ls(gdrive_path, pattern = ".csv$")
 results_files <- files %>% 
   filter(grepl("_results.", name))
 
-summary_files <- files %>% 
-  filter(grepl("stats_summaries", name))
-
 ## Set paths to read in files
 results_path = paste0(local_path, "results/")
-summary_path <- paste0(local_path, "summaries/")
 
 
 ## Create download function - doesn't work for some reason
@@ -66,7 +64,6 @@ download_data <- function(files, output_path){
 
 ## Download files
 download_data(results_files, results_path)
-download_data(summary_files, summary_path)
 
 
 # 3. Read in results files -----------------------------------------------------
@@ -74,10 +71,10 @@ download_data(summary_files, summary_path)
 ## Make a function to read in data and clean uop filenames
 read_results <- function(file){
   read_csv(paste0(results_path, file)) %>% 
-    mutate(file = str_remove(file, "_fire_results.csv")) %>% 
-    mutate(file = str_remove(file, "_results.csv")) %>% 
-    mutate(file = str_remove(file, "PER_")) %>% 
-    mutate(file = str_remove(file, "HRU_SLP_")) %>% 
+    #mutate(file = str_remove(file, "_fire_results.csv")) %>% 
+    #mutate(file = str_remove(file, "_results.csv")) %>% 
+    #mutate(file = str_remove(file, "PER_")) %>% 
+    #mutate(file = str_remove(file, "HRU_SLP_")) %>% 
     clean_names() %>% 
     select(dates, file, contains("_fire"), contains("_nofire")) %>% 
     select(!contains("_kgday"))
@@ -88,8 +85,12 @@ results_raw <- results_files$name %>%
   map(read_results) %>% 
   bind_rows()
 
+
 ## Clean up and categorize the files -------------------------------------------
 
+## All will have severity, either "base" or severity, all will have percent, either "base" or percent, all will have category
+
+## Keep in, label as 
 file_values_to_scrub = c("base_burned", "LOW", "MOD", "HIGH")
 
 percent_change = function(var, baseline){
@@ -106,7 +107,7 @@ results_data <- results_raw %>%
   mutate(category = case_when(grepl("LOW", file) | grepl("MOD", file) | grepl("HIGH", file) ~ "severity", 
                               file == "WET" | file == "DRY" ~ "precipitation", 
                               file == "GWQ" | file == "LATQ" | file == "SURQ" ~ "flowpath",
-                              file == "deciduous" | file == "shrub" | file == "coniferous" | file == "grass" ~ "vegetation",
+                              file == "deciduous" | file == "shrub" | file == "coniferous" | file == "grass" ~ "land_use",
                               file == "base_burned" ~ "base",
                               TRUE ~ "slope")) %>% 
   mutate(flow_perc = percent_change(flow_m3s_fire, flow_m3s_nofire), 
@@ -114,8 +115,10 @@ results_data <- results_raw %>%
          nitrate_perc = percent_change(nit_mg_l_fire, nit_mg_l_nofire), 
          doc_perc = percent_change(doc_mg_l_fire, doc_mg_l_nofire))
 
+
 median_ = function(...){median(..., na.rm = T)}
 mean_ = function(...){mean(..., na.rm = T)}
+
 
 results_stats <- results_data %>% 
   group_by(file) %>% 
@@ -131,12 +134,10 @@ severity_stats <- results_stats %>%
   mutate(percent = as.factor(as.numeric(percent))) %>% #simple way to reorder as a factor
   mutate(severity = fct_relevel(severity, c("LOW", "MOD", "HIGH")))
 
+
 ggplot(severity_stats, aes(percent, flow_median, fill = severity)) + 
   geom_col()
 
-
-  facet_wrap(~category, nrow = 1, scales = "free") + 
-  scale_x_continuous(trans = pseudolog10_trans)
 
 
 
