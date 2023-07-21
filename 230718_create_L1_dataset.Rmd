@@ -146,6 +146,8 @@ outputs_final <- outputs_percents %>%
 
 ```{r Write out dataset}
 write_csv(outputs_final, "230718_output_datset_L1.csv")
+
+save(outputs_final, file = "230718_output_datset_L1.rda")
 ```
 
 
