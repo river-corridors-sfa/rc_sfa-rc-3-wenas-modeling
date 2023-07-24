@@ -1,0 +1,80 @@
+---
+title: "ESA watershed figs"
+author: "PR & AMP"
+date: "2023-07-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, 
+                      message = F, 
+                      warning = F)
+
+ # load packages
+ require(pacman)
+ pacman::p_load(tidyverse, # keep things tidy!!
+                googlesheets4, # read_sheet
+                googledrive, # google drive access
+                janitor,
+                ggplot2, #plotting
+                PNWColors ) # pretty colors 
+```
+
+### Load Data
+
+```{r Import L1 data}
+
+l1_modeloutput_all <- read_csv("../230718_output_datset_L1.csv")
+
+```
+
+### Calculate metrics 
+
+```{r}
+
+l1_model_statsums <- l1_modeloutput_all %>%
+  select(-dates) %>%
+  group_by(short_scenario, scenario, scenario_group, description, scenario_raw, climate, land_use, hydrology, slope, percent, severity) %>%
+  dplyr::summarise(across(everything(), list(mean = mean, median = median, sd = sd), na.rm=TRUE))
+
+```
+
+l1_modeloutput_all %>%
+ filter(scenario_group %in% c("Climate", "Base Case", "Land Use")) %>%
+    ggplot() +
+    geom_line(aes(x = dates, y=doc_mg_l_fire, color= description, linetype = description), position= position_jitterdodge()) +   
+    ylab("Change in DOC (%)")+
+    theme_classic() +
+    theme(legend.position = "bottom")+
+    guides(color= guide_legend(nrow= 2))
+    
+    
+### ESA plots 
+Plots to make are:
+DOC
+NO3
+TSS
+
+climate, vegetation, basecase (fire/no fire)
+
+```{r}
+
+l1_model_statsums %>% 
+  select(short_scenario, scenario, scenario_group, description, scenario_raw, description, climate, land_use, hydrology, slope, percent, severity, doc_perc_mean, doc_perc_median,  doc_perc_sd, nitrate_perc_mean, nitrate_perc_median, nitrate_perc_sd, sed_perc_mean, sed_perc_median, sed_perc_sd) %>%
+  filter(scenario_group %in% c("Climate", "Base Case", "Land Use")) %>%
+  mutate(scenario = case_when(scenario == 'base_burned' ~ 'burned',
+                              scenario == 'WET' ~ 'increased precip',
+                              scenario == 'DRY' ~ 'decreased precip',
+                              TRUE ~ scenario)) %>%
+  ggplot(aes(doc_perc_mean, scenario, color = scenario),
+              position = position_dodge(width = -0.5)) +
+  geom_pointrange(aes(xmin = doc_perc_mean - doc_perc_sd, xmax = doc_perc_mean + doc_perc_sd, 
+                      color = scenario),
+                      position = position_dodge(width = -0.5), size = 0.5) +
+  geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
+  facet_wrap(~scenario_group, ncol= 1, scales = "free_y") +
+  cowplot::theme_cowplot() +
+  theme(legend.position = "bottom")
+
+```
+
