@@ -140,7 +140,7 @@ outputs_percents <- all_outputs_scenarios_columned %>%
   
 
 outputs_final <- outputs_percents %>% 
-  filter(dates > "2019-12-31")
+  filter(dates > "2019-08-31") # model fire started in 2019 # 
 ```
 
 

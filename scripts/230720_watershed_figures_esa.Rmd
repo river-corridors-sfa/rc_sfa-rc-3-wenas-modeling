@@ -78,3 +78,24 @@ l1_model_statsums %>%
 
 ```
 
+```{r peter severity code}
+severity_colors = PNWColors::pnw_palette("Bay", 4)
+  #c("#3B9AB2", "#E1AF00", "#F21A00")
+set_alpha = 0.8
+
+l1_model_statsums_abs <- l1_model_statsums %>% dplyr::filter(scenario_group == 'Area Burned x Severity')
+
+plot_percent_change <- function(data, var, y_label){
+    ggplot(data, aes(percent, {{var}}, fill = severity)) + 
+    geom_col(position = "dodge", alpha = set_alpha) + 
+    scale_fill_manual(values = severity_colors) + 
+    labs(x = "% of watershed burned", y = y_label, fill = "")
+}
+
+cowplot::plot_grid(
+          plot_percent_change(l1_model_statsums_abs, sed_perc_mean, "TSS (%)"), 
+          plot_percent_change(l1_model_statsums_abs, nitrate_perc_mean, "NO3 (%)"), 
+          plot_percent_change(l1_model_statsums_abs, doc_perc_mean, "DOC (%)"), 
+          ncol = 1)
+```
+
