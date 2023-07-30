@@ -83,7 +83,8 @@ severity_colors = PNWColors::pnw_palette("Bay", 4)
   #c("#3B9AB2", "#E1AF00", "#F21A00")
 set_alpha = 0.8
 
-l1_model_statsums_abs <- l1_model_statsums %>% dplyr::filter(scenario_group == 'Area Burned x Severity')
+l1_model_statsums_abs <- l1_model_statsums %>% dplyr::filter(scenario_group == 'Area Burned x Severity') %>%
+  dplyr::mutate(percent = str_extract(scenario, ".*(?=\\_)"))
 
 plot_percent_change <- function(data, var, y_label){
     ggplot(data, aes(percent, {{var}}, fill = severity)) + 
