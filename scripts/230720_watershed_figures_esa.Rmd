@@ -24,7 +24,7 @@ knitr::opts_chunk$set(echo = F,
 
 ```{r Import L1 data}
 
-l1_modeloutput_all <- read_csv("../230718_output_datset_L1.csv")
+l1_modeloutput_all <- read_csv("../230729_output_datset_L1.csv")
 
 ```
 
@@ -79,24 +79,36 @@ l1_model_statsums %>%
 ```
 
 ```{r peter severity code}
-severity_colors = PNWColors::pnw_palette("Bay", 4)
-  #c("#3B9AB2", "#E1AF00", "#F21A00")
+severity_colors = c("#3B9AB2", "#E1AF00", "#F21A00")
+severity_order = c("Low", "Moderate", "High")
+percent_order = c("10", "15", "20", "25", "30", "35", "40", "45", "50", "60", "75", "90", "100")
 set_alpha = 0.8
 
-l1_model_statsums_abs <- l1_model_statsums %>% dplyr::filter(scenario_group == 'Area Burned x Severity') %>%
-  dplyr::mutate(percent = str_extract(scenario, ".*(?=\\_)"))
+l1_model_statsums_abs <- l1_model_statsums %>% 
+  dplyr::filter(scenario_group == 'Area Burned x Severity') %>% 
+  dplyr::mutate(severity = case_when(severity == "LOW" ~ "Low",
+                                     severity == "MOD" ~ "Moderate",
+                                     severity == "HIGH" ~ "High"))
 
 plot_percent_change <- function(data, var, y_label){
-    ggplot(data, aes(percent, {{var}}, fill = severity)) + 
+    ggplot(data, aes(factor(percent, level= percent_order), {{var}}, fill = factor(severity, level=severity_order))) + 
     geom_col(position = "dodge", alpha = set_alpha) + 
     scale_fill_manual(values = severity_colors) + 
-    labs(x = "% of watershed burned", y = y_label, fill = "")
+    labs(x = "Simulated % of Watershed Burned", y = y_label, fill = "Simulated Severity")+
+    cowplot::theme_cowplot() +
+    theme(axis.title.y=element_text(size=15),
+          axis.text.y = element_text(size=15),
+          axis.text.x= element_text(size=15),
+          axis.title.x=element_text(size=15))
 }
 
 cowplot::plot_grid(
-          plot_percent_change(l1_model_statsums_abs, sed_perc_mean, "TSS (%)"), 
-          plot_percent_change(l1_model_statsums_abs, nitrate_perc_mean, "NO3 (%)"), 
-          plot_percent_change(l1_model_statsums_abs, doc_perc_mean, "DOC (%)"), 
+          plot_percent_change(l1_model_statsums_abs, sed_perc_mean, "TSS (% change)"), 
+          plot_percent_change(l1_model_statsums_abs, nitrate_perc_mean, "NO3 (% change)"), 
+          plot_percent_change(l1_model_statsums_abs, doc_perc_mean, "DOC (% change)"), 
           ncol = 1)
+
+
+plot_percent_change(l1_model_statsums_abs, doc_perc_mean, "DOC Percent Difference (%)")
 ```
 
