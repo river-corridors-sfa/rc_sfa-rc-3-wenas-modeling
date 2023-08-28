@@ -25,6 +25,8 @@ library(dotwhisker)
 library(dplyr)
 library(lme4)
 library(emmeans)
+library(lmerTest)
+
 ```
 
 
@@ -273,7 +275,7 @@ ggsave("site.effect.geom_pointrange.climate.pdf",
 
 # geom_jitter for TSF # 
 # Creating an order in which I want to plot the y-axis
-level_order <- c('0-1 years', '2-3 years', '>10 years') 
+level_order <- c('0-1 years', '2-3 years', '4-5 years', '>10 years') 
 
 ggplot(effect_size, aes(Effect_size, TSF, color = response_var)) +
   geom_jitter(position = position_jitter(0.2), alpha = 0.4, size = 1) +
@@ -302,19 +304,39 @@ ggsave("site.difference.geom_pointrange.TSF.pdf",
        width = 10, height = 8, units = "in")
 
 
+
+### LIKE DOVE DOES IT ###
+effect_size <- effect_size %>% 
+  mutate(PD = abs(100*(1-exp(Effect_size)))) # calculating percent_difference 
+
+# summary stats #
+effect_size_summary <- effect_size %>% 
+  group_by(TSF) %>% 
+  summarise(meanPD = mean(PD))
+
+
+
+ggplot(effect_size, aes(TSF, Effect_size, color = response_var)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red") + 
+  scale_x_discrete(limit = level_order) +
+  theme_classic()
+
+
 ```
 
 
 ### STEP 6 random effects model ###
 ```{r DOC random effects }
 mDOC_climate <- lmer(Effect_size ~ Climate + (1|Study_ID), data = effect_size_DOC)
+summary(mDOC_climate) 
 
 plot(mDOC_climate)
 qqnorm(resid(mDOC_climate))
 
 anova(mDOC_climate) # f-value = 0.7755
 
-summary(mDOC_climate) 
+
 
 ```
 
@@ -326,15 +348,29 @@ Column standard deviation is a measure of how much variability in the dependent 
 ```{r DOC random effects fire}
 #emmeans(mDOC, list(pairwise ~ Study_ID), adjust = "tukey")
 
+effect_size_DOC <- effect_size_DOC %>% 
+  mutate(TSF_factor = factor(TSF, levels = c("0-1 years", "2-3 years", "4-5 years", ">10 years")))
+
 # fire
-mDOC_fire <- lmer(Effect_size ~ TSF + (1|Study_ID), data = effect_size_DOC)
+mDOC_fire <- lmer(Effect_size ~ TSF_factor + (1|Study_ID), data = effect_size_DOC)
+
+summary(mDOC_fire) # none are significant 
 
 plot(mDOC_fire)
 qqnorm(resid(mDOC_fire))
 
-anova(mDOC_fire) # f-value = 0.7755
+anova(mDOC_fire) # f-value = 0.9201
 
-summary(mDOC_fire) 
+effect_size_DOC %>% 
+  group_by(TSF) %>% 
+  summarise(mean = mean(Effect_size))
+
+#0-1 years 0.340
+#2-3 years 0.261
+#4-5 years 0.290
+#>10 years 0.168
+
+
 
 ```
 
@@ -358,7 +394,11 @@ The Study_ID does appear to be showing additional variance but not a lot still. 
 
 
 ```{r NO3 random effects fire}
-mNO3_TSF <- lmer(Effect_size ~ TSF + (1|Study_ID), data = effect_size_NO3)
+effect_size_NO3 <- effect_size_NO3 %>% 
+  mutate(TSF_factor = factor(TSF, levels = c("0-1 years", "2-3 years", "4-5 years", ">10 years")))
+
+mNO3_TSF <- lmer(Effect_size ~ TSF_factor + (1|Study_ID), data = effect_size_NO3)
+summary(mNO3_TSF) 
 
 plot(mNO3_TSF)
 qqnorm(resid(mNO3_TSF))
@@ -378,7 +418,78 @@ The Study_ID does appear to be showing additional variance but not a lot still. 
 
 
 
+############## Steph sent a meta analysis script in R and I want to test it here ###########
+```{r}
+library(metafor)
+library(boot)
+library(meta)
 
+#
+effect_size_DOC <- effect_size_DOC %>% 
+  mutate(TSF_factor = factor(TSF, levels = c("0-1 years", "2-3 years", "4-5 years", ">10 years")))
+# 
+
+# pivoting to make the responses in one column
+effect_size_DOC_long <- effect_size_DOC %>% 
+  pivot_longer(
+    cols = Xe1:Xe10,
+    names_to = "Experimental",
+    values_to = "mean_concentration",
+    values_drop_na = TRUE
+  )
+effect_size_DOC_long <- effect_size_DOC_long[!duplicated(effect_size_DOC_long$mean_concentration), ]
+
+ADGmetaHAKN_High_LS <-metacont(n.e = Ne,
+                      mean.e = mean_concentration,
+                      sd.e = mean_concentration, 
+                      n.c = Nc,
+                      mean.c = Xc, 
+                      sd.c = Xc, 
+                      studlab = Study_ID,
+                      data = effect_size_DOC_long,
+                      comb.fixed = FALSE,
+                      comb.random = TRUE,
+                      method.tau = "REML",
+                      hakn=TRUE,
+                      byvar = effect_size_DOC_long$TSF_factor,
+                      tau.common = FALSE)
+
+ADGmetaHAKN_High_LS
+
+# plot #
+forest(ADGmetaHAKN_High_LS,
+       col.square = "green",
+       col.square.lines = "green",
+       col.diamond.random = "black",
+       col.diamond.lines.random = "black",
+       allstudies = TRUE,
+       text.random = "Mean ADG",
+       leftlabs=c("Study","N","Mean","SD","N","Mean","SD"),
+       lab.e="B",
+       lab.c="A",
+       comb.fixed=FALSE,
+       comb.random = TRUE,
+       label.left="Favours A", 
+       col.label.left="red",
+       label.right="Favours B", 
+       col.label.right="blue",
+       hetstat=FALSE,
+       test.overall.random = TRUE,
+       digits.mean=2,
+       digits.sd=2,
+       digits.weight = 0,
+       weight.study = "random",
+       test.effect.subgroup.random = TRUE,
+       overall = TRUE,
+       print.byvar = FALSE,
+       col.by="purple",
+       addrow.subgroups=TRUE,
+       addrow.overall=TRUE,
+       addrow=TRUE,
+       label.test.effect.subgroup.random="Subgroup effect",
+       test.subgroup.random = TRUE)
+
+```
 
 
 
