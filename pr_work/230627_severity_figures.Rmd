@@ -41,7 +41,7 @@ set_alpha = 0.8
 First up, let's download the data from Drive to local so we can work with it. We'll put it in pr_work/data/new_model. Note that I'm commenting this one out to speed up rerunning the script
 
 
-```{r Pull data from G Drive, eval = F}
+```{r Pull data from G Drive, eval = T}
 
 ## Authorize GDrive
 options(gargle_oauth_email = "peter.regier@pnnl.gov")
