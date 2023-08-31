@@ -146,7 +146,7 @@ The p-value of the test is 3.378e, which is less than the significance level alp
 #### STEP 5 Do CIs of effect size overlap with 0 #### 
 This will tell us if the effect sizes are significant or not 
 ```{r}
-# rm(list=ls(all=T)) #this clears your Environment
+rm(list=ls(all=T)) #this clears your Environment
 
 
 library(tidyverse)
@@ -164,6 +164,12 @@ effect_size_DOC <- effect_size %>%
 effect_size_NO3 <- effect_size %>% 
   filter(response_var == "NO3_mg_per_L_as_Nitrate")
 
+# Calculating the average effect size per study_ID and the standard deviation:
+study_id_summary <- effect_size %>%
+  group_by(Study_ID, response_var) %>%
+  summarise(
+    MeanEffect = mean(Effect_size),
+    sd = sd(Effect_size, na.rm = TRUE))
 
 
 ```
@@ -187,6 +193,8 @@ ggplot(pd_es) +
   geom_point(aes(x = Percent_Difference, y = as.numeric(Effect_Size), color = "red")) +
   facet_wrap(~response_var) +
   theme_bw()
+
+
 
 ```
 The equation for percent change in Dove's paper is D = 100(1-e^ln(R))

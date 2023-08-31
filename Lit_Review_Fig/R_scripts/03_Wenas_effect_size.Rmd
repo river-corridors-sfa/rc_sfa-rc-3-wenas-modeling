@@ -179,7 +179,7 @@ brie_test <- MeanConcTest %>%
 
 # Calculating effect size: ln((MeanTreatment/MeanControl))
 analyte_table_effect_size <- analyte_table_means %>% 
-  filter(Study_ID != "12") %>% 
+  filter(Study_ID != "12", Study_ID != "9") %>% 
   group_by(Study_ID, response_var, Koppen, TSF) %>%
   mutate(lnR1 = log(Xe1/Xc),
          lnR2 = log(Xe2/Xc),
@@ -224,6 +224,54 @@ analyte_table_effect_size <-analyte_table_effect_size %>%
 # combining study_ID_12 back into the mix 
 analyte_table_combine_effect_size <- analyte_table_effect_size %>% 
   add_row(brie_test_stats_effect)
+
+## Study_ID_9 ##
+# Study_ID 9 is not working properly, so let me try and fix it here: #
+study_9 <- MeanConcTest %>% 
+  filter(Study_ID == 9) %>% 
+  filter(response_var == "DOC_mg_C_L" | 
+         response_var == "NO3_mg_per_L_as_Nitrate")
+
+analyte_table_means_9 <- study_9 %>% 
+  select(-Pair_JSC) %>%
+  group_by(Study_ID, response_var, Koppen, TSF) %>%
+  summarize(Ne = sum(Ne),
+            Nc = sum(Nc),
+            Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
+            Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
+            Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
+            Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
+            Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
+            Xe6 = sum(Xe[Pair_JSC == "Site 6"], na.rm = TRUE),
+            Xe7 = sum(Xe[Pair_JSC == "Site 7"], na.rm = TRUE),
+            Xe8 = sum(Xe[Pair_JSC == "Site 8"], na.rm = TRUE),
+            Xe9 = sum(Xe[Pair_JSC == "Site 9"], na.rm = TRUE),
+            Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
+            Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE)) 
+
+analyte_table_means_9$Xc[analyte_table_means_9$response_var == "DOC_mg_C_L" &
+                                                  analyte_table_means_9$Xc=="0"]<- 2.14
+
+analyte_table_means_9$Xc[analyte_table_means_9$response_var == "NO3_mg_per_L_as_Nitrate" &
+                                                  analyte_table_means_9$Xc=="0"]<- 0.006774194
+
+analyte_table_means_9[analyte_table_means_9 == 0] <- NA
+
+effect_size_9 <- analyte_table_means_9 %>% 
+  group_by(Study_ID, response_var, Koppen, TSF) %>%
+  mutate(lnR1 = log(Xe1/Xc),
+         lnR2 = log(Xe2/Xc),
+         lnR3 = log(Xe3/Xc),
+         lnR4 = log(Xe4/Xc),
+         lnR5 = log(Xe5/Xc),
+         lnR6 = log(Xe6/Xc),
+         lnR7 = log(Xe7/Xc),
+         lnR8 = log(Xe8/Xc),
+         lnR9 = log(Xe9/Xc),
+         lnR10 = log(Xe10/Xc))
+
+analyte_table_combine_effect_size <- analyte_table_combine_effect_size %>% 
+  add_row(effect_size_9)
 
 # Adding a broader climate variable that will group the codes into climates that people actually understand #
 unique(analyte_table_combine_effect_size$Koppen)

@@ -173,7 +173,7 @@ analyte_table_means[analyte_table_means == 0] <- NA
 # ifelse statement teaching moment- wee
 
 analyte_table_percent_change <- analyte_table_means %>% 
-  filter(Study_ID != "12") %>% 
+  filter(Study_ID != "12", Study_ID != "9") %>% 
   group_by(Study_ID, response_var, Koppen, TSF) %>%
   mutate(percent_change1 = (((Xe1-Xc)/Xc)*100),
          percent_change2 = (((Xe2-Xc)/Xc)*100),
@@ -235,6 +235,54 @@ analyte_table_percent_change <-analyte_table_percent_change %>%
 analyte_table_combine <- analyte_table_percent_change %>% 
   add_row(brie_test_stats)
 
+## Study_ID_9 ##
+# Study_ID 9 is not working properly, so let me try and fix it here: #
+study_9 <- MeanConcTest %>% 
+  filter(Study_ID == 9) %>% 
+  filter(response_var == "DOC_mg_C_L" | 
+         response_var == "NO3_mg_per_L_as_Nitrate")
+
+analyte_table_means_9 <- study_9 %>% 
+  select(-Pair_JSC) %>%
+  group_by(Study_ID, response_var, Koppen, TSF) %>%
+  summarize(Ne = sum(Ne),
+            Nc = sum(Nc),
+            Xe1 = sum(Xe[Pair_JSC == "Site 1"], na.rm = TRUE),
+            Xe2 = sum(Xe[Pair_JSC == "Site 2"], na.rm = TRUE),
+            Xe3 = sum(Xe[Pair_JSC == "Site 3"], na.rm = TRUE),
+            Xe4 = sum(Xe[Pair_JSC == "Site 4"], na.rm = TRUE),
+            Xe5 = sum(Xe[Pair_JSC == "Site 5"], na.rm = TRUE),
+            Xe6 = sum(Xe[Pair_JSC == "Site 6"], na.rm = TRUE),
+            Xe7 = sum(Xe[Pair_JSC == "Site 7"], na.rm = TRUE),
+            Xe8 = sum(Xe[Pair_JSC == "Site 8"], na.rm = TRUE),
+            Xe9 = sum(Xe[Pair_JSC == "Site 9"], na.rm = TRUE),
+            Xe10 = sum(Xe[Pair_JSC == "Site 10"], na.rm = TRUE),
+            Xc = sum(Xc[Pair_JSC == "Control"], na.rm = TRUE)) 
+
+analyte_table_means_9$Xc[analyte_table_means_9$response_var == "DOC_mg_C_L" &
+                                                  analyte_table_means_9$Xc=="0"]<- 2.14
+
+analyte_table_means_9$Xc[analyte_table_means_9$response_var == "NO3_mg_per_L_as_Nitrate" &
+                                                  analyte_table_means_9$Xc=="0"]<- 0.006774194
+
+analyte_table_means_9[analyte_table_means_9 == 0] <- NA
+
+percent_change_9 <- analyte_table_means_9 %>% 
+  group_by(Study_ID, response_var, Koppen, TSF) %>%
+  mutate(percent_change1 = (((Xe1-Xc)/Xc)*100),
+         percent_change2 = (((Xe2-Xc)/Xc)*100),
+         percent_change3 = (((Xe3-Xc)/Xc)*100),
+         percent_change4 = (((Xe4-Xc)/Xc)*100),
+         percent_change5 = (((Xe5-Xc)/Xc)*100),
+         percent_change6 = (((Xe6-Xc)/Xc)*100),
+         percent_change7 = (((Xe7-Xc)/Xc)*100),
+         percent_change8 = (((Xe8-Xc)/Xc)*100),
+         percent_change9 = (((Xe9-Xc)/Xc)*100),
+         percent_change10 = (((Xe10-Xc)/Xc)*100))
+
+analyte_table_combine <- analyte_table_combine %>% 
+  add_row(percent_change_9)
+
 
 # Adding a broader climate variable that will group the codes into climates that people actually understand #
 unique(analyte_table_combine$Koppen)
@@ -277,6 +325,13 @@ analyte_table_long_2 <- analyte_table_filter %>%
     values_to = "Value",
     values_drop_na = TRUE
   )
+
+# Calculating the average percent difference per study_ID and the standard deviation:
+study_id_summary <- analyte_table_filter %>%
+  group_by(Study_ID, response_var) %>%
+  summarise(
+    Percent_difference = mean(Percent_Difference),
+    sd = sd(Percent_Difference, na.rm = TRUE))
 
 # Calculating the standard deviation for all of the percent_differences
 # calculating the mean percent_difference by climate 
