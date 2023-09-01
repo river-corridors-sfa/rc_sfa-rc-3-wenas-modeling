@@ -138,6 +138,11 @@ percent_difference_cv <- percent_difference %>%
             sdPD = sd(Percent_Difference, na.rm = TRUE),
             CVPD = sdPD/meanPD) # generating CVs
 
+percent_difference_cv_summary <- percent_difference_cv %>% 
+  group_by(response_var, Koppen) %>% 
+  summarise(sdCV = sd(CVPD, na.rm = TRUE),
+            CVPD = mean(CVPD, na.rm = TRUE))
+
 percent_difference_DOC <- percent_difference_cv %>% 
   filter(response_var == "DOC_mg_C_L")
 
@@ -150,28 +155,27 @@ vn = expression(paste(""*N*O[3]^"-"))
 
 ggplot(percent_difference_cv, aes(x = Koppen, y = CVPD, color = response_var)) +
   geom_point() +
-  scale_fill_manual(values=c("#FF7F00", "#3288BD")) +
-  theme_classic() 
+  scale_color_manual(values=c("#FF7F00", "#3288BD")) +
+  theme_classic()
+
 
 ggplot(percent_difference_cv, aes(CVPD, Koppen, color = response_var),
               position = position_dodge(width = -0.5)) +
   geom_jitter(position = position_jitter(0.1), alpha = 0.4, size = 3) +
-  geom_pointrange(aes(xmin = CVPD - sdPD, xmax = CVPD + sdPD,
+  geom_pointrange(aes(xmin = CVPD - sdCV, xmax = CVPD + sdCV,
                       color = response_var),
-                      position = position_dodge(width = -0.5), size = 1.5, data = percent_difference_cv) +
+                      position = position_dodge(width = -0.5), size = 1.5, data = percent_difference_cv_summary) +
   geom_vline(xintercept = 0, linewidth = 0.5, color = "red") +
   scale_color_manual(values = c("#00AFBB", "#E7B800"),
                      guide = guide_legend(title = "Analyte"),
                      labels = c('DOC', vn)) +
-  scale_x_continuous(breaks = seq(-250, 250, by = 50)) + 
   theme_classic() +
-  theme(axis.text.x = element_text(size = 30, angle = -30),
+  theme(axis.text.x = element_text(size = 30),
         axis.text.y = element_text(size = 30),
         axis.title.x = element_text(size = 40),
         axis.title.y = element_text(size = 34),
         legend.text = element_text(size = 30),
-        legend.position = c(0.9, 0.65))
-
+        legend.position = c(0.2, 0.85))
 
 # this figure tells us stuff that we already know that nitrate is substantially more variable compared to DOC but is it Climate dependent and it doesn't look like it but lets put some stats to this 
 
