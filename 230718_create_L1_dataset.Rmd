@@ -142,7 +142,18 @@ outputs_percents <- all_outputs_scenarios_columned %>%
   
 
 outputs_final <- outputs_percents %>% 
-  filter(dates > "2019-08-31") # model fire started in 2019 # 
+  filter(dates >= "2019-08-31" & # model fire started in 2019
+           dates < "2020-09-01") # trim to 12 months 
+```
+
+```{r DOC test plot}
+
+
+outputs_final %>% 
+  filter(scenario_group == "Area Burned x Severity") %>% 
+ggplot(aes(x = percent, y = doc_perc, fill = severity)) + 
+  geom_col(position = "dodge")
+
 ```
 
 
@@ -151,8 +162,9 @@ write_csv(outputs_final, paste(Sys.Date(),"_output_datset_L1.csv", sep = ""))
 
 
 
-save(outputs_final, file = paste(Sys.Date(),"_output_datset_L1.csv", sep = ""))
+#save(outputs_final, file = paste(Sys.Date(),"_output_datset_L1.csv", sep = ""))
 ```
+
 
 
 
