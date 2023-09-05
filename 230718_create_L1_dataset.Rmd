@@ -148,11 +148,14 @@ outputs_final <- outputs_percents %>%
 
 ```{r DOC test plot}
 
-
-outputs_final %>% 
+sev <- outputs_final %>% 
   filter(scenario_group == "Area Burned x Severity") %>% 
-ggplot(aes(x = percent, y = doc_perc, fill = severity)) + 
+  group_by(percent, severity) %>% 
+  summarize(nitrate_perc = mean(nitrate_perc, na.rm = T))
+
+ggplot(sev, aes(x = percent, y = nitrate_perc, fill = severity)) + 
   geom_col(position = "dodge")
+
 
 ```
 
