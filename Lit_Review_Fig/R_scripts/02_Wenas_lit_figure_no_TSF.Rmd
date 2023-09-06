@@ -253,6 +253,7 @@ analyte_table_long <- analyte_table_combine %>%
 # filter out the only analytes that we want to include in the figure 
 analyte_table_filter <- analyte_table_long %>% 
   filter(response_var == "DOC_mg_C_L"| response_var == "NO3_mg_per_L_as_Nitrate",
+         Study_ID != "27",
          Percent_Difference < 3000)
 
 # I want to pivot_longer to make all means in one column
@@ -281,6 +282,11 @@ climate.summary <- analyte_table_filter %>%
 # Ploting #
 vn = expression(paste(""*N*O[3]^"-"))
 
+give.n <- function(x){
+  return(c(y = median(x)*1.05, label = length(x))) 
+  # experiment with the multiplier to find the perfect position
+}
+
 
 # geom_jitter for climate # 
 ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_var),
@@ -294,6 +300,8 @@ ggplot(analyte_table_filter, aes(Percent_Difference, Koppen, color = response_va
   scale_color_manual(values = c("#00AFBB", "#E7B800"),
                      guide = guide_legend(title = "Analyte"),
                      labels = c('DOC', vn)) +
+  stat_summary(fun.data = give.n, geom = "text", fun.y = median,
+                  position = position_dodge(width = 0.75)) +
   theme_classic()
 
 ggsave("site.difference.geom_pointrange.climate.pdf",
