@@ -1,0 +1,59 @@
+---
+title: "01_Wenas_meta"
+output: html_document
+date: "2023-09-06"
+---
+
+The purpose of this script is take the output from SCOPUS and Web of Science and merge them into 1 working document. 
+
+## Load packages and set working directory
+```{r Jake/Mac}
+#for Jake/mac
+
+rm(list=ls(all=T)) #this clears your Environment
+
+library(readr)
+library(tidyverse)
+library(here)
+```
+
+
+```{r}
+web_meta <- read_csv(here("inputs", "Metaanalysis_webofscience.csv"), skip = 10) # reading in web of science output
+
+web_meta <-web_meta %>% 
+  select(-("1900":"2023")) %>% 
+  mutate_all(as.character) # removing columns that are not necessary. Column 1900:2023 are purely counting the amount of citations per year and I don't care for that. I am also making all columns characters so it will be easier to merge. 
+
+scopus_meta <- read_csv(here("inputs", "Wenas_meta_analysis_scopus.csv")) # reading in the scopus output
+
+scopus_meta <- scopus_meta %>% 
+  mutate_all(as.character) # Changing all columns to characters so it will be easier to merge
+
+merged_meta <- full_join(web_meta, scopus_meta) %>% 
+  distinct(DOI, .keep_all = TRUE) # merging both dataframes and removing duplicated DOIs. This yields 319 studies. 
+
+# export dataframe 
+write_csv(merged_meta, here("Output_for_analysis", "merged_meta.csv"))
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
