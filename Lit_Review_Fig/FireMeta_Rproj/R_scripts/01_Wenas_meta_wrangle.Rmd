@@ -34,7 +34,7 @@ merged_meta <- full_join(web_meta, scopus_meta) %>%
   distinct(DOI, .keep_all = TRUE) # merging both dataframes and removing duplicated DOIs. This yields 319 studies. 
 
 # export dataframe 
-write_csv(merged_meta, here("Output_for_analysis", "merged_meta.csv"))
+write_csv(merged_meta, here("Output_for_analysis", "merged_meta.csv")) # exporting merged dataframe into outputs file
 
 
 ```
