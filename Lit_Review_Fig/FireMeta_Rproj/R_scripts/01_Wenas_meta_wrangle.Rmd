@@ -39,7 +39,58 @@ write_csv(merged_meta, here("Output_for_analysis", "merged_meta.csv")) # exporti
 
 ```
 
+```{r map}
+countries = map_data("world")
+countriessub = subset(spData::world,name_long%in%c("United States","Canada","Australia","Spain","Portugal","South Africa"))
 
+ariddata = read.csv("inputs/Aridity_Data.csv")
+
+studymetalist = lapply(studies,function(x){
+  read.csv(file.path(x))
+})
+Fig1sited = data.frame(do.call("rbind",lapply(1:length(studymetalist), function(x){
+  # Extract latitude and longitude coordinates
+  studysites=studymetalist[[x]][,
+          c("Sub.area","Longitude","Latitude","Activity","X..Affected","Intensity","Burn.type","Slope....","Area..ha.",
+            "Annual.Precipitation..cm.","Annual.Runoff..cm.","Frequency","Data.source","Data.Type"
+            )]
+  names(studysites)[1]="Site"
+  studysites$Activity[studysites$Activity=="FALSE"]="F"
+  sites = subset(studysites,!duplicated(Site))
+  sites[,c("Annual.Precipitation..cm.","Annual.Runoff..cm.")] = 
+    aggregate(studysites[,c("Annual.Precipitation..cm.","Annual.Runoff..cm.")],by=list(studysites$Site),FUN=mean,na.action=na.omit)[,-1]
+  sites[,"X..Affected"] = sapply(sites$Site,function(ss){
+    ssxa = subset(studysites,Site==ss)$X..Affected
+    if(sum(!is.na(ssxa))!=0){return(max(ssxa,na.rm=T))}else{return(NA)}
+    })
+  sites = dplyr::left_join(sites,subset(ariddata,Study==studiesFINAL[x])[,c("Site","Aridity.Index")],
+                    by=c("Site"))
+  
+  sites = cbind(data.frame(Study=studiesFINAL[x],sites))
+  sites$Country = do.call("rbind",lapply(1:nrow(sites),function(s){
+    pp = st_as_sf(st_sfc(st_point(as.vector(unlist(as.vector(sites[s,c("Longitude","Latitude")]))))),crs=4326)
+    suppressMessages({suppressWarnings({
+      st_intersection(pp,countriessub)$name_long
+    })})
+  }))
+  sites = sites[,c("Study","Site","Longitude","Latitude","Country","Activity","X..Affected","Intensity","Burn.type","Slope....","Area..ha.",
+                  "Annual.Precipitation..cm.","Annual.Runoff..cm.","Aridity.Index","Frequency","Data.source","Data.Type")]
+  
+  return(sites)
+})))
+write.csv(x = Fig1sited,file = "outdata/Fig1_site_metadata.csv")
+Fig1sited$Intensity = factor(Fig1sited$Intensity,levels=c("L","M","H"))
+Fig1sited$Burn.type = factor(Fig1sited$Burn.type,levels=c("N","P"))
+
+sitesummary = do.call("rbind",lapply(1:5,function(c){
+  col = c("Slope....","Area..ha.","Annual.Precipitation..cm.","Annual.Runoff..cm.","Aridity.Index")[c]
+  name = c("Slope","Area (ha)","Precip (cm/yr)","Runoff (cm/yr)","Aridity Index")[c]
+  cbind(data.frame(var = name),t(quantile(Fig1sited[,col],c(0,0.25,0.5,0.75,1),na.rm=T)))
+  
+}))
+write.csv(x = sitesummary,file = "outdata/TableSI_2_SiteMetaData.csv")
+
+```
 
 
 
