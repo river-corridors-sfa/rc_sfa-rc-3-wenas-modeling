@@ -2,6 +2,8 @@
 title: "01_Wenas_meta"
 output: html_document
 date: "2023-09-06"
+editor_options: 
+  chunk_output_type: console
 ---
 
 The purpose of this script is take the output from SCOPUS and Web of Science and merge them into 1 working document. 
@@ -15,10 +17,12 @@ rm(list=ls(all=T)) #this clears your Environment
 library(readr)
 library(tidyverse)
 library(here)
+library(readxl)
+library(ggmap)
 ```
 
 
-```{r}
+```{r merge web of science and Scopus results}
 web_meta <- read_csv(here("inputs", "Metaanalysis_webofscience.csv"), skip = 10) # reading in web of science output
 
 web_meta <-web_meta %>% 
@@ -39,7 +43,34 @@ write_csv(merged_meta, here("Output_for_analysis", "merged_meta.csv")) # exporti
 
 ```
 
-```{r map}
+```{r round 2 of filter, plot where the 1st round filter on a map to see if we should filter by geographic location}
+library("rnaturalearth")
+library("rnaturalearthdata")
+
+meta <- read_excel(here("inputs", "StudiesData_Table1.xlsx"), 
+    sheet = "Study_info_filtered_take_one") # reading in filtered meta data sheet
+
+coords <- meta %>% 
+  select(Lat, Long) %>% 
+  mutate(across(everything(), as.numeric)) # creating dataframe that is just the coordinates
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = coords, aes(x = Long, y = Lat), size = 4, 
+        shape = 23, fill = "darkred") 
+
+ggsave("meta_map_filter_1.pdf",
+       path = here("initial_plots", "01_Wenas_meta_wrangle"),
+       width = 8, height = 10, units = "in")
+
+```
+
+
+```{r Hampton Paper map script}
+# HAMPTON paper # 
 countries = map_data("world")
 countriessub = subset(spData::world,name_long%in%c("United States","Canada","Australia","Spain","Portugal","South Africa"))
 
