@@ -108,6 +108,8 @@ unique(meta_df$NO3_unit)
 unique(meta_df$`Design (Control/Burn; Pre/Post)`)
 unique(meta_df$Study_ID)
 
+table(mean$Time_Since_Fire)
+
 ```
 
 

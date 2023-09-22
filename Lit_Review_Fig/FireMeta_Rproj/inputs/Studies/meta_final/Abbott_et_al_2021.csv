@@ -1,5 +1,5 @@
 Study_ID,DOI,Design (Control/Burn; Pre/Post),Latitude,Longitude,Pair,Climate,Site,Sampling_Date,Burn_Unburn,Time_Since_Fire,Mean_Median_or_IndividualSample,DOC,DOC_unit,STDEV_DOC,STER_DOC,NO3,NO3_unit,STDEV_NO3,STER_NO3,Data_Found,Notes
-Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,68.9491428,-150.746,Control,Dwc,BS.11,9-Jun-17,Unburn,10,Individual,635.4334052,um,,,0.02465,um,,,In the supplemental,"The units of these values are incorrect! DOC/NO3 is in ï¿½M. This paper just compares unburned and burned. So is it fair to separate these by site and then compare them to the unburned sites as the ""Control"""
+Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,68.9491428,-150.746,Control,Dwc,BS.11,9-Jun-17,Unburn,10,Individual,635.4334052,um,,,0.02465,um,,,In the supplemental,"The units of these values are incorrect! DOC/NO3 is in µM. This paper just compares unburned and burned. So is it fair to separate these by site and then compare them to the unburned sites as the ""Control"""
 Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,68.96492768,-150.732,Site_2,Dwc,BS.12,9-Jun-17,Burn,10,Individual,824.2650303,um,,,0.0507,um,,,,
 Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,68.98182057,-150.821,Control,Dwc,BS.14,9-Jun-17,Unburn,10,Individual,721.4400493,um,,,0.0468,um,,,,
 Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,68.99096849,-150.832,Control,Dwc,BS.15,9-Jun-17,Unburn,10,Individual,733.6791361,um,,,0.0447,um,,,,
@@ -9,6 +9,7 @@ Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,69.11102593,-15
 Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,69.12400656,-150.803,Site_4,Dwc,BS.22,9-Jun-17,Burn,10,Individual,1130.658496,um,,,0.0373,um,,,,
 Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,69.21417841,-150.894,Site_5,Dwc,BS.24,9-Jun-17,Burn,10,Individual,868.3923502,um,,,0.0288,um,,,,
 Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,69.22634558,-150.913,Site_6,Dwc,BS.25,9-Jun-17,Burn,10,Individual,1192.270226,um,,,7.2071,um,,,,
+Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,69.27085483,-150.978,Control,Dwc,BS.26,9-Jun-17,Unburn,10,Individual,613.5362635,um,,,0.4521,um,,,,
 Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,69.33007406,-151.035,Control,Dwc,BS.31,9-Jun-17,Unburn,10,Individual,784.4671834,um,,,0.2966,um,,,,
 Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,69.37195944,-151.011,Site_9,Dwc,BS.32,9-Jun-17,Burn,10,Individual,652.4182604,um,,,0.0291,um,,,,
 Abbott et al. 2021,10.1111/gcb.15507,Control_Reference_vs_Impact,69.38362981,-151.096,Control,Dwc,BS.33,9-Jun-17,Unburn,10,Individual,781.6363742,um,,,0.3254,um,,,,
