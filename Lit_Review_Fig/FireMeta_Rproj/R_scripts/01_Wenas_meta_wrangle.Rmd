@@ -19,6 +19,8 @@ library(tidyverse)
 library(here)
 library(readxl)
 library(ggmap)
+library(sf)
+
 ```
 
 
@@ -66,68 +68,47 @@ ggsave("meta_map_filter_1.pdf",
        path = here("initial_plots", "01_Wenas_meta_wrangle"),
        width = 8, height = 10, units = "in")
 
-```
-
-
-```{r Hampton Paper map script}
-# HAMPTON paper # 
-countries = map_data("world")
-countriessub = subset(spData::world,name_long%in%c("United States","Canada","Australia","Spain","Portugal","South Africa"))
-
-ariddata = read.csv("inputs/Aridity_Data.csv")
-
-studymetalist = lapply(studies,function(x){
-  read.csv(file.path(x))
-})
-Fig1sited = data.frame(do.call("rbind",lapply(1:length(studymetalist), function(x){
-  # Extract latitude and longitude coordinates
-  studysites=studymetalist[[x]][,
-          c("Sub.area","Longitude","Latitude","Activity","X..Affected","Intensity","Burn.type","Slope....","Area..ha.",
-            "Annual.Precipitation..cm.","Annual.Runoff..cm.","Frequency","Data.source","Data.Type"
-            )]
-  names(studysites)[1]="Site"
-  studysites$Activity[studysites$Activity=="FALSE"]="F"
-  sites = subset(studysites,!duplicated(Site))
-  sites[,c("Annual.Precipitation..cm.","Annual.Runoff..cm.")] = 
-    aggregate(studysites[,c("Annual.Precipitation..cm.","Annual.Runoff..cm.")],by=list(studysites$Site),FUN=mean,na.action=na.omit)[,-1]
-  sites[,"X..Affected"] = sapply(sites$Site,function(ss){
-    ssxa = subset(studysites,Site==ss)$X..Affected
-    if(sum(!is.na(ssxa))!=0){return(max(ssxa,na.rm=T))}else{return(NA)}
-    })
-  sites = dplyr::left_join(sites,subset(ariddata,Study==studiesFINAL[x])[,c("Site","Aridity.Index")],
-                    by=c("Site"))
-  
-  sites = cbind(data.frame(Study=studiesFINAL[x],sites))
-  sites$Country = do.call("rbind",lapply(1:nrow(sites),function(s){
-    pp = st_as_sf(st_sfc(st_point(as.vector(unlist(as.vector(sites[s,c("Longitude","Latitude")]))))),crs=4326)
-    suppressMessages({suppressWarnings({
-      st_intersection(pp,countriessub)$name_long
-    })})
-  }))
-  sites = sites[,c("Study","Site","Longitude","Latitude","Country","Activity","X..Affected","Intensity","Burn.type","Slope....","Area..ha.",
-                  "Annual.Precipitation..cm.","Annual.Runoff..cm.","Aridity.Index","Frequency","Data.source","Data.Type")]
-  
-  return(sites)
-})))
-write.csv(x = Fig1sited,file = "outdata/Fig1_site_metadata.csv")
-Fig1sited$Intensity = factor(Fig1sited$Intensity,levels=c("L","M","H"))
-Fig1sited$Burn.type = factor(Fig1sited$Burn.type,levels=c("N","P"))
-
-sitesummary = do.call("rbind",lapply(1:5,function(c){
-  col = c("Slope....","Area..ha.","Annual.Precipitation..cm.","Annual.Runoff..cm.","Aridity.Index")[c]
-  name = c("Slope","Area (ha)","Precip (cm/yr)","Runoff (cm/yr)","Aridity Index")[c]
-  cbind(data.frame(var = name),t(quantile(Fig1sited[,col],c(0,0.25,0.5,0.75,1),na.rm=T)))
-  
-}))
-write.csv(x = sitesummary,file = "outdata/TableSI_2_SiteMetaData.csv")
+# We decided to remove all the studies that were out of the country
 
 ```
 
 
+```{r data prepper}
+studies_file_list <- list.files(path = "inputs/Studies/meta_final/", 
+                                  recursive=F, 
+                                  pattern=".csv", 
+                                  full.names=TRUE)
+
+storm_list_beta<-do.call("list", lapply(studies_file_list, 
+                                        read.csv, 
+                                        stringsAsFactors=FALSE, 
+                                        header=T))
+
+meta_df <-do.call("rbind", lapply(studies_file_list, 
+                                     read.csv, 
+                                     check.names = FALSE,
+                                     stringsAsFactors=FALSE, 
+                                     header=T, blank.lines.skip = TRUE, fill=TRUE)) # Should be 6033
 
 
+unitconv=read.csv("inputs/UnitConversion.csv",stringsAsFactors = FALSE)
 
+# checking to see if my manual input of the meta analysis is good or not. 
+meta_df %>% 
+  group_by(`Design (Control/Burn; Pre/Post)`, Study_ID) %>% 
+  n_distinct(meta_df$Study_ID)
 
+mean <- meta_df %>% 
+  filter(Mean_Median_or_IndividualSample == "Mean")
+table(mean$Study_ID)
+
+unique(meta_df$DOC_unit)
+unique(meta_df$NO3_unit)
+
+unique(meta_df$`Design (Control/Burn; Pre/Post)`)
+unique(meta_df$Study_ID)
+
+```
 
 
 
