@@ -1,0 +1,168 @@
+---
+title: "230718_create_raw_dataset"
+author: "PR"
+date: "2023-07-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F,
+                      message = F,
+                      warning = F)
+```
+
+### Purpose
+
+The goal here is to import raw model data from Google Drive from the 'New Model (DOC)' folder (last updated May 12, 2023) and create a single master dataset that we will use for all statistics and figure creation. 
+
+```{r Setup}
+ # load packages
+ require(pacman)
+ pacman::p_load(tidyverse, # keep things tidy!!
+                googlesheets4, # read_sheet
+                googledrive, # google drive access
+                janitor,
+                ggplot2, #plotting
+                PNWColors ) # pretty colors 
+```
+
+
+``` {r read in data, echo=FALSE}
+ ## Set GDrive URL for files
+
+ directory = "https://drive.google.com/drive/folders/1tl1Kf0PxVHbS7wPL4W071pvS1Af3Ji1i"
+
+ read_data <- function(data){
+   
+   #message("downloading", data)
+   # First, scrape scenario name from file name
+   scenario <- stringr::word(data, sep= fixed(".c"))
+   # Second, read in data
+   read_csv(file = data) %>%
+     mutate(scenario = scenario)
+  }
+
+ ## Create a list of files to download
+ # Grab the files that are the full simulation results, NOT the stat_summaries
+ files <- drive_ls(directory) %>%
+   filter(grepl("_results", name))
+
+ ## Download files to local (don't worry, we'll delete 'em in a sec)
+ lapply(files$id, drive_download, overwrite = TRUE)
+
+ ## Read in data
+ all_outputs <- files$name %>%
+   map(read_data) %>%
+   bind_rows()
+
+ #all_outputs$dates <- as.POSIXct(all_outputs$dates)
+
+ ## Use the key on Google Sheets to bring in metadata
+ key = googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1fM_JKnCXQ9uUFaplQ90YwZevvnrnpSp_R26KsN8tHdM/edit#gid=0", sheet = 1)
+
+ ## create dataframe for all data and metadata
+ all_outputs_wmeta <- left_join(all_outputs, key, by=c("scenario"))
+ 
+file.remove(c(files$name))
+
+all_outputs_wmeta
+```
+
+### Cleaning 
+
+After we read in all the data, we need to properly parse the filenames so that we have separate columns for each piece of information that we want to use. For instance, for burn severity models, we need to know the severity (LOW, MOD, HIGH) and the area (the percent), while for slope, we need to know the slope (0.1 - 1) and the sign (negative or positive).
+
+```{r}
+
+## Dataframe names are gross, but that's okay, cause they'll only live inside this chunk!
+
+## Step 1: Trim out unwanted columns
+all_outputs_trim_cols <- all_outputs_wmeta %>% 
+  clean_names() %>% 
+  select(dates, contains("_fire"), contains("_nofire"), contains("scenario"), description) %>%  # scrub percent columns
+  select(!contains("_kgday")) # scrub load columns
+
+## Step 2: Trim the scenario column (remove unwanted stuff!)
+all_outputs_trim_scenario <- all_outputs_trim_cols %>% 
+  mutate(scenario_raw = scenario) %>% 
+  mutate(scenario = str_remove(scenario, "_results")) %>%
+  mutate(scenario = str_remove(scenario, "PER_")) %>%
+  mutate(scenario = str_remove(scenario, "_fire")) %>%
+  mutate(scenario = str_remove(scenario, "HRU_SLP_"))
+
+## Step 3: Create a seperate column for each scenario
+all_outputs_scenarios_columned <- all_outputs_trim_scenario %>% 
+  mutate(climate = case_when(scenario == "WET" | 
+                               scenario == "DRY" ~ scenario, 
+                             TRUE ~ "base")) %>% 
+  mutate(land_use = case_when(scenario == "coniferous" | 
+                                scenario == "deciduous" | 
+                                scenario == "grass" | 
+                                scenario == "shrub" ~ scenario, 
+                              TRUE ~ "base")) %>% 
+  mutate(hydrology = case_when(scenario == "GWQ" | 
+                                 scenario == "LATQ" | 
+                                 scenario == "SURQ" ~ scenario, 
+                               TRUE ~ "base")) %>% 
+  mutate(slope = case_when(scenario == "neg_1" ~ scenario,
+                           scenario == "neg_0.5" ~ scenario, 
+                           scenario == "neg_0.1" ~ scenario, 
+                           scenario == "0.1" ~ "pos_0.1", 
+                           scenario == "0.5" ~ "pos_0.5", 
+                           scenario == "1" ~ "pos_1", 
+                           TRUE ~ "base")) %>% 
+ mutate(percent = case_when(grepl("[0-9]{2}_[A-Z]{3}", scenario) ~ str_extract(scenario, ".*(?=\\_)"), 
+                             TRUE ~ "base"), 
+  # mutate(percent = case_when(grepl("[0-9]{2}_[A-Z]{3}", scenario) ~ str_sub(scenario, 1, 2), 
+  #                           TRUE ~ "base"), 
+         severity = case_when(scenario == "LOW" | scenario == "MOD" | scenario == "HIGH" ~ scenario,
+                              grepl("[0-9]{2}_[A-Z]{3}", scenario) ~ str_replace_all(scenario, "[^[:alpha:]]", ""), 
+                              TRUE ~ "base"))
+
+```
+
+
+```{r}
+ggplot(all_outputs_scenarios_columned, aes(scenario, percent, color = severity)) + 
+  geom_point() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+```{r Calculate percents}
+percent_change = function(var, baseline){
+  (({{var}} - {{baseline}}) / {{baseline}}) * 100
+}
+
+outputs_percents <- all_outputs_scenarios_columned %>% 
+    mutate(flow_perc = percent_change(flow_m3s_fire, flow_m3s_nofire), 
+         sed_perc = percent_change(sed_mg_l_fire, sed_mg_l_nofire), 
+         nitrate_perc = percent_change(nit_mg_l_fire, nit_mg_l_nofire), 
+         doc_perc = percent_change(doc_mg_l_fire, doc_mg_l_nofire))
+  
+
+outputs_final <- outputs_percents %>% 
+  filter(dates >= "2019-08-31" & # model fire started in 2019
+           dates < "2020-09-01") # trim to 12 months 
+```
+
+```{r DOC test plot}
+
+sev <- outputs_final %>% 
+  filter(scenario_group == "Area Burned x Severity") %>% 
+  group_by(percent, severity) %>% 
+  summarize(nitrate_perc = mean(nitrate_perc, na.rm = T))
+
+ggplot(sev, aes(x = percent, y = nitrate_perc, fill = severity)) + 
+  geom_col(position = "dodge")
+
+
+```
+
+
+```{r Write out dataset}
+write_csv(outputs_final, paste0("../data/outputs/",Sys.Date(),"_output_datset_L1.csv"))
+save(outputs_final, file = paste0("../data/outputs/",Sys.Date(),"_output_datset_L1.rda"))
+```
+
+

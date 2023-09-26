@@ -42,5 +42,6 @@ vignettes/*.pdf
 
 */data/*
 
-
 .RDataTmp
+
+data/stat_summaries
