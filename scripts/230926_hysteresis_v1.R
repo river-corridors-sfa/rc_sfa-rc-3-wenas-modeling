@@ -9,7 +9,7 @@ p_load(tidyverse,
 
 theme_set(theme_bw())
 
-df <- read_csv("230729_output_datset_L1.csv") %>% 
+df <- read_csv("data/outputs/230729_output_datset_L1.csv") %>% 
   filter(percent != "base")
   
 ggplot(df, aes(dates, flow_m3s_fire, color = percent)) + 
