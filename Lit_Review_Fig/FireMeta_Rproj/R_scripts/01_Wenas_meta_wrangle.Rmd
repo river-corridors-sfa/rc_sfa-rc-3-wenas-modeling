@@ -24,7 +24,7 @@ library(dataRetrieval)
 
 ```
 
-
+## Merge formal lit search 
 ```{r merge web of science and Scopus results}
 web_meta <- read_csv(here("inputs", "Metaanalysis_webofscience.csv"), skip = 10) # reading in web of science output
 
@@ -45,6 +45,8 @@ write_csv(merged_meta, here("Output_for_analysis", "merged_meta.csv")) # exporti
 
 
 ```
+
+## Filter by geography 
 
 ```{r round 2 of filter, plot where the 1st round filter on a map to see if we should filter by geographic location}
 library("rnaturalearth")
@@ -73,6 +75,7 @@ ggsave("meta_map_filter_1.pdf",
 
 ```
 
+## Q 
 ```{r looking into which papers have Q or not}
 meta_Q <- read_excel(here("inputs", "StudiesData_Table1.xlsx"), 
     sheet = "Study_info_filtered_V3_Q") # reading in filtered meta data sheet
@@ -81,7 +84,7 @@ table(meta_Q$Discharge)
 
 ```
 
-```{r pulling USGS gauged data from papers}
+```{r pulling USGS gauged data from Oliver et al. 2012}
 
 # Oliver et al. 2012, Water quality response to the Angora Fire, Lake Tahoe, California #
 siteNumber <- "103366097"
@@ -102,7 +105,9 @@ Angora <- readNWISuv(
 write_csv(Angora_daily, here("inputs", "Studies", "Oliver_et_al_2012", "daily_Q.csv")) 
 write_csv(Angora, here("inputs", "Studies", "Oliver_et_al_2012", "Q_15.csv")) 
 
+```
 
+```{r pulling USGS gauged data from Goodale et al. 2000}
 # Goodale et al. 2000, The long-term effects of disturbance on organic and inorganic nitrogen export in the White Mountains, New Hampshire #
 # From Table 2 # 
 siteNumber <- "01137500"
@@ -161,7 +166,10 @@ Pemigewasset <- readNWISuv(
 write_csv(Pemigewasset_daily, here("inputs", "Studies", "Goodale_et_al_2000", "Pemigewasset_daily_Q.csv")) 
 write_csv(Pemigewasset, here("inputs", "Studies", "Goodale_et_al_2000", "Pemigewasset_Q_15.csv")) 
 
+```
 
+
+```{r pulling USGS gauged data from Mast & Clow. 2008}
 # Mast & Clow. 2008, Effects of 2003 wildfires on stream chemistry in Glacier National Park, Montana #
 # Coal Creek # 
 siteNumber <- "482518113420101"
@@ -201,7 +209,9 @@ Pinchot <- readNWISuv(
 write_csv(Coal_daily, here("inputs", "Studies", "Mast_Clow_2008", "Pinchot_daily_Q.csv")) 
 write_csv(Coal, here("inputs", "Studies", "Mast_Clow_2008", "Pinchot_Q_15.csv")) 
 
+```
 
+```{r pulling USGS gauged data from Mast et al. 2016}
 # Mast et al. 2016, Water-quality response to a high-elevation wildfire in the Colorado Front Range #
 # Big Thompson River # 
 siteNumber <- "402114105350101"
@@ -241,6 +251,9 @@ NSV <- readNWISuv(
 write_csv(NSV_daily, here("inputs", "Studies", "Mast_et_al_2016", "NSV_daily_Q.csv")) 
 write_csv(NSV, here("inputs", "Studies", "Mast_et_al_2016", "NSV_Q_15.csv")) 
 
+```
+
+```{r pulling USGS gauged data from Murphy et al. 2015}
 # Murphy et al. 2015, The role of precipitation type, intensity, and spatial distribution in source water quality after wildfire # 
 # DS2 # 
 siteNumber <- "06727500"
@@ -280,7 +293,47 @@ DS3 <- readNWISuv(
 write_csv(DS3_daily, here("inputs", "Studies", "Murphy_et_al_2015", "DS3_daily_Q.csv")) 
 write_csv(DS3, here("inputs", "Studies", "Murphy_et_al_2015", "DS3_Q_05.csv")) 
 
+```
 
+```{r pulling USGS gauged data from Uzun et al. 2020}
+# Uzun et al. 2020, Two years of post-wildfire impacts on dissolved organic matter, nitrogen, and precursors of disinfection by-products in California stream waters # 
+# Cache Creek #
+siteNumber <- "11451800"
+CacheInfo <- readNWISsite(siteNumber)
+parameterCd <- "00060"
+
+Cache_daily <- readNWISdv(
+  siteNumber, parameterCd,
+  "2016-01-01", "2017-12-31"
+)
+
+Cache <- readNWISuv(
+  siteNumber, parameterCd,
+  "2016-01-01", "2017-12-31"
+)
+
+# export dataframe 
+write_csv(Cache_daily, here("inputs", "Studies", "Uzun_et_al_2020", "Cache_daily_Q.csv")) 
+write_csv(Cache, here("inputs", "Studies", "Uzun_et_al_2020", "Cache_Q_15.csv")) 
+
+# Putah Creek flow (about 1.6 km downstream of Wragg input) #
+siteNumber <- "11454000"
+PutahInfo <- readNWISsite(siteNumber)
+parameterCd <- "00060"
+
+Putah_daily <- readNWISdv(
+  siteNumber, parameterCd,
+  "2016-01-01", "2017-12-31"
+)
+
+Putah <- readNWISuv(
+  siteNumber, parameterCd,
+  "2016-01-01", "2017-12-31"
+)
+
+# export dataframe 
+write_csv(Putah_daily, here("inputs", "Studies", "Uzun_et_al_2020", "Putah_daily_Q.csv")) 
+write_csv(Putah, here("inputs", "Studies", "Uzun_et_al_2020", "Putah_Q_05.csv")) 
 
 
 
