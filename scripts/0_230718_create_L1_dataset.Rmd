@@ -130,33 +130,21 @@ ggplot(all_outputs_scenarios_columned, aes(scenario, percent, color = severity))
 
 
 ```{r Calculate percents}
-percent_change = function(var, baseline){
-  (({{var}} - {{baseline}}) / {{baseline}}) * 100
-}
-
-outputs_percents <- all_outputs_scenarios_columned %>% 
-    mutate(flow_perc = percent_change(flow_m3s_fire, flow_m3s_nofire), 
-         sed_perc = percent_change(sed_mg_l_fire, sed_mg_l_nofire), 
-         nitrate_perc = percent_change(nit_mg_l_fire, nit_mg_l_nofire), 
-         doc_perc = percent_change(doc_mg_l_fire, doc_mg_l_nofire))
+# percent_change = function(var, baseline){
+#   (({{var}} - {{baseline}}) / {{baseline}}) * 100
+# }
+# 
+# outputs_percents <- all_outputs_scenarios_columned %>% 
+#   filter(dates >= "2019-08-31" & # model fire started in 2019
+#            dates < "2020-09-01") %>%  # trim to 12 months 
+#     mutate(flow_perc = percent_change(flow_m3s_fire, flow_m3s_nofire), 
+#          sed_perc = percent_change(sed_mg_l_fire, sed_mg_l_nofire), 
+#          nitrate_perc = percent_change(nit_mg_l_fire, nit_mg_l_nofire), 
+#          doc_perc = percent_change(doc_mg_l_fire, doc_mg_l_nofire))
   
-
-outputs_final <- outputs_percents %>% 
+outputs_final <- all_outputs_scenarios_columned %>% 
   filter(dates >= "2019-08-31" & # model fire started in 2019
-           dates < "2020-09-01") # trim to 12 months 
-```
-
-```{r DOC test plot}
-
-sev <- outputs_final %>% 
-  filter(scenario_group == "Area Burned x Severity") %>% 
-  group_by(percent, severity) %>% 
-  summarize(nitrate_perc = mean(nitrate_perc, na.rm = T))
-
-ggplot(sev, aes(x = percent, y = nitrate_perc, fill = severity)) + 
-  geom_col(position = "dodge")
-
-
+           dates < "2020-09-01")
 ```
 
 
