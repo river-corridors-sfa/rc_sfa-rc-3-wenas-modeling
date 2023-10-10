@@ -1,0 +1,213 @@
+---
+title: "231010_create_L2_dataset"
+output: html_document
+date: "2023-10-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F,
+                      warning = F,
+                      message = F)
+```
+
+### Goal
+
+The goal of this script works off of L1 data, which has been imported from GDrive and reformatted into a format that's convenient for our analysis needs, but hasn't been otherwise processed. The script will take L1 data and convert it to L2 data, which will include percent change calculations. This is a small and supposedly simple step, but since it's been the source of a lot of uncertainty, we're going to take a full script to do the calculations, verify they're doing what we expect, and confirm stats for Figure 3 etc make sense prior to exporting. 
+
+
+```{r Setup}
+
+ # load packages
+ require(pacman)
+ pacman::p_load(tidyverse, # keep things tidy!!
+                googlesheets4, # read_sheet
+                googledrive, # google drive access
+                janitor,
+                ggplot2, #plotting
+                PNWColors ) # pretty colors 
+ 
+ theme_set(theme_bw())
+ 
+ severity_colors = c("#3B9AB2", "#E1AF00", "#F21A00")
+
+```
+
+```{r Import L1}
+ df_l1 <- read_csv("../data/outputs/2023-10-05_output_datset_L1.csv") %>% 
+  filter(percent != "base") %>% 
+  mutate(percent = as.factor(as.numeric(percent)), 
+         severity = factor(severity, levels = c("LOW", "MOD", "HIGH")))
+ 
+ df_l1
+```
+
+
+### Context plots {.tabset}
+
+```{r plot absolute}
+
+## helper function
+mean_ <- function(...){mean(..., na.rm = T)}
+
+df_l1_bin <- df_l1 %>% 
+  group_by(percent, severity) %>% 
+  summarize(across(where(is.numeric), mean_))
+
+plot_absolute <- function(var, ref, y_label){
+  
+  nofire_ref <- mean_(df_l1_bin %>% pull({{ref}}))
+  
+  ggplot(df_l1_bin, aes(percent, {{var}}, fill = severity)) + 
+    geom_col(position = "dodge", color = "black", alpha = 0.5) + 
+    geom_hline(yintercept = nofire_ref) + 
+    scale_fill_manual(values = severity_colors) + 
+    labs(x = "Percent of watershed burned", 
+         y = y_label, 
+         fill = "Fire \n Severity")
+}
+```
+
+
+First, let's look at some context plots for what we expect % differences to be
+
+#### Flow
+```{r}
+plot_absolute(flow_m3s_fire, flow_m3s_nofire, "Flow (m3/s)")
+```
+
+#### Sediment
+```{r}
+plot_absolute(sed_mg_l_fire, sed_mg_l_nofire, "Flow (m3/s)")
+```
+
+#### NO3
+```{r}
+plot_absolute(nit_mg_l_fire, nit_mg_l_nofire, "Flow (m3/s)")
+```
+
+#### DOC
+```{r}
+plot_absolute(doc_mg_l_fire, doc_mg_l_nofire, "Flow (m3/s)")
+```
+
+### Expectations for percentages
+
+```{r}
+percent_change = function(var, baseline){
+  (({{var}} - {{baseline}}) / {{baseline}}) * 100
+}
+```
+
+Based on the figures above, and using the agreed-upon formula of percent_change = (fire - baseline) / baseline) x 100, we would expect percent changes on the order of 
+  - Flow: max of ~ 20%
+  - Sediment: max of ~ 2%
+  - NO3: max of ~ 170%
+  - DOC: max of ~ 625%
+
+So let's try calculating values, and see what we get. It is important to note that i'm calculating percents based on data that's already been summarized to means, not the raw data: 
+
+```{r calculate percentages from binned data}
+
+df_l1_bin_percents <- df_l1_bin %>% 
+    mutate(flow_perc = percent_change(flow_m3s_fire, flow_m3s_nofire),
+         sed_perc = percent_change(sed_mg_l_fire, sed_mg_l_nofire),
+         nitrate_perc = percent_change(nit_mg_l_fire, nit_mg_l_nofire),
+         doc_perc = percent_change(doc_mg_l_fire, doc_mg_l_nofire))
+```
+
+```{r}
+plot_percent <- function(var, y_label){
+  
+  ggplot(df_l1_bin_percents, aes(percent, {{var}}, fill = severity)) + 
+    geom_col(position = "dodge", color = "black", alpha = 0.5) + 
+    scale_fill_manual(values = severity_colors) + 
+    labs(x = "Percent of watershed burned", 
+         y = y_label, 
+         fill = "Fire \n Severity")
+}
+```
+
+### Plots: calculate means then calculate percent change {.tabset}
+
+#### Flow
+```{r}
+plot_percent(flow_perc, "Flow (m3/s)")
+```
+
+#### Sediment
+```{r}
+plot_percent(sed_perc, "Flow (m3/s)")
+```
+
+#### NO3
+```{r}
+plot_percent(nitrate_perc, "Flow (m3/s)")
+```
+
+#### DOC
+```{r}
+plot_percent(doc_perc, "Flow (m3/s)")
+```
+
+These all look as expected, and don't explain why we had a disconnect between absolute and percent calculations in the original L1 dataset. Let's calculate percents for the full dataset, then bin, then plot, and see if that replicates the issue: 
+
+```{r}
+df_l1_percents <- df_l1 %>% 
+  group_by(percent, severity) %>% 
+    mutate(flow_perc = percent_change(flow_m3s_fire, flow_m3s_nofire),
+         sed_perc = percent_change(sed_mg_l_fire, sed_mg_l_nofire),
+         nitrate_perc = percent_change(nit_mg_l_fire, nit_mg_l_nofire),
+         doc_perc = percent_change(doc_mg_l_fire, doc_mg_l_nofire)) %>% 
+  select(dates, contains("_perc"))
+```
+
+```{r}
+bin_then_plot_percent <- function(var, y_label){
+  
+  df_l1_percents %>% 
+    group_by(percent, severity) %>% 
+    summarize(mean_var = mean_({{var}})) %>% 
+  ggplot(aes(percent, mean_var, fill = severity)) + 
+    geom_col(position = "dodge", color = "black", alpha = 0.5) + 
+    scale_fill_manual(values = severity_colors) + 
+    labs(x = "Percent of watershed burned", 
+         y = y_label, 
+         fill = "Fire \n Severity")
+}
+```
+
+### Plots: calculate percent change then calculate means {.tabset}
+
+#### Flow
+```{r}
+bin_then_plot_percent(flow_perc, "Flow (m3/s)")
+```
+
+#### Sediment
+```{r}
+bin_then_plot_percent(sed_perc, "Flow (m3/s)")
+```
+
+#### NO3
+```{r}
+bin_then_plot_percent(nitrate_perc, "NO3 (mg/L)")
+```
+
+#### DOC
+```{r}
+bin_then_plot_percent(doc_perc, "DOC (mg/L)")
+```
+
+# AHA - that's the issue!
+
+So, when we calculate means FIRST then calculate percent change SECOND, we get sensible values. When we calculate percent change FIRST for every date, then calculate means SECOND, it over-inflates changes in NO3 and DOC (likely influence of outliers). As such, L2 is going to be the dataset, but calculating means first, then percent changes second to feed proper data to Figure 3 and beyond.
+
+```{r Write L2 dataset}
+write_csv(df_l1_bin_percents, paste0("../data/outputs/",Sys.Date(),"_output_datset_L2_means.csv"))
+```
+
+
+
+
+
+
