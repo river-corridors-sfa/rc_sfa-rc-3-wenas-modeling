@@ -45,3 +45,5 @@ vignettes/*.pdf
 .RDataTmp
 
 data/stat_summaries
+
+pr_work/

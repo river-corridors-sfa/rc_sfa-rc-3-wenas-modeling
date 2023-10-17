@@ -53,7 +53,7 @@ ggsave("figures/3_Fig3_absolute_changes.png", width = 6, height = 8)
 # 3. Make percent plots --------------------------------------------------------
 
 make_geom_col_perc <- function(var, y_label){
-  ggplot(df_perc, aes(percent, {{var}}, fill = severity)) + 
+  ggplot(df, aes(as.factor(percent), {{var}}, fill = severity)) + 
     geom_col(position = "dodge", color = "black", alpha = 0.5) + 
     scale_fill_manual(values = severity_colors) + 
     labs(x = "Percent of watershed burned", 
