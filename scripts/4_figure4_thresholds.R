@@ -97,7 +97,7 @@ percents <- pmap_df(list(all_scenarios$scenario, all_scenarios$col_name), calcul
 
 ggplot(percents) + 
   geom_col(aes(x = as.factor(percent), y = diff_fire_nofire, fill = severity), 
-           position = "dodge", alpha = 0.5) + 
+           position = "dodge", color = "black", alpha = 0.5) + 
   # geom_hline(data = percents %>% ) + 
   facet_wrap(~var) + 
   scale_fill_manual(values = severity_colors) + 
