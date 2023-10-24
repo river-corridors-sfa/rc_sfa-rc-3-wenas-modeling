@@ -11,6 +11,7 @@
 
 require(pacman)
 p_load(tidyverse,
+       ggpubr,
        cowplot)
 
 ## Set ggplot theme and color palette
@@ -85,24 +86,78 @@ calculate_exceedence <- function(my_scenario,
 }
 
 all_scenarios <- expand_grid(scenario = unique(df$scenario), 
-                             col_name = c("flow", "sed", "nit", "doc"))
+                             col_name = c("sed", "nit", "doc"))
 
 percents <- pmap_df(list(all_scenarios$scenario, all_scenarios$col_name), calculate_exceedence) %>% 
   mutate(percent = as.factor(as.numeric(percent)), 
          severity = factor(severity, levels = c("LOW", "MOD", "HIGH"))) %>% 
   mutate(diff_fire_nofire = per_ex_fire - per_ex_nofire) %>% 
-  mutate(var = fct_relevel(column_prefix, "flow", "sed", "nit", "doc"))
-
-
+  mutate(var = fct_relevel(column_prefix, "sed", "nit", "doc"))
 
 ggplot(percents) + 
   geom_col(aes(x = as.factor(percent), y = diff_fire_nofire, fill = severity), 
            position = "dodge", color = "black", alpha = 0.5) + 
-  # geom_hline(data = percents %>% ) + 
-  facet_wrap(~var) + 
+  facet_wrap(~var, ncol = 1, scale = "free_y") + 
   scale_fill_manual(values = severity_colors) + 
   labs(x = "Percent", y = "% (fire) - % (no fire)")
-ggsave("figures/4_fig4_quantile_exceedence_v1.png", width = 10, height = 7)
+ggsave("figures/4_fig4_quantile_exceedence_v1.png", width = 7, height = 8)
+
+
+my_comparisons = list(c("LOW", "MOD"), 
+                      c("LOW", "HIGH"),
+                      c("MOD", "HIGH"))
+
+ggplot(percents) + 
+  geom_boxplot(aes(x = as.factor(severity), y = diff_fire_nofire, fill = severity), 
+           position = "dodge", color = "black", alpha = 0.5) + 
+  geom_hline(yintercept = 0) + 
+  facet_wrap(~column_prefix)# + 
+  #stat_compare_means(comparisons = my_comparisons)
+ 
+
+
+
+## Let's try the Newcomer methods. Source: 
+## https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2022WR034206
+## Those didn't really pan out for the level of data we have, though we could
+## use it to separate "baseline" from "quickflow" for discharge, then explore
+## how those events impacted things?
+
+# calculate_cusum <- function(var, percent, severity){
+#   data <- df %>% 
+#     filter(percent == percent) %>%
+#     filter(severity == severity)
+# }
+# 
+# percent = "100"
+# severity = "HIGH"
+# 
+# 
+# x <- df %>% 
+#   filter(percent == percent) %>%
+#   filter(severity == severity)
+# 
+# df %>% 
+#   ungroup() %>% 
+#   rename("value" = sed_mg_l_fire) %>% 
+#   select(percent, severity, flow_m3s_fire, value) %>% 
+#   drop_na() %>% 
+#   group_by(percent, severity) %>% 
+#   arrange(., flow_m3s_fire) %>% 
+#   mutate(normalized = (value - mean(value)) / sd(value)) %>% ## Normalized DO
+#   mutate(cusum = cumsum(normalized)) %>% 
+#   summarize(cusum = min(cusum),
+#             flow_m3s_fire = flow_m3s_fire[which.min(cusum)]) %>%
+#   ggplot(aes(percent, flow_m3s_fire, fill = severity)) + 
+#   geom_col(position = "dodge") + 
+#   scale_y_continuous(limits = c(0.04, 0.09))
+  #ggplot(aes(flow_m3s_fire, cusum, color = percent)) + 
+  #geom_line() + 
+  # geom_point(alpha = 0.5) + 
+  # scale_x_log10() + 
+  # facet_wrap(~severity, ncol = 1)
+
+
 
 
 
