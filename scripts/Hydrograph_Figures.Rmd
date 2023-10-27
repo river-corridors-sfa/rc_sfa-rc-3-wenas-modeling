@@ -100,15 +100,15 @@ ecdf <- percent_outputs %>%
   group_by(short_scenario) %>%
   filter(!scenario == "base_burned") %>%
   filter(!percent == "base") %>%
-  ggplot(aes(flow_m3s_fire, color= severity, linetype = percent, alpha = as.numeric(percent)))+
+  ggplot(aes(flow_m3s_fire, color= severity, linetype = percent))+
   stat_ecdf()+
   scale_x_log10()+
   geom_vline(xintercept = median(no_fire_flow$flow_m3s_nofire), color = "black")+
   geom_vline(xintercept = quantile(no_fire_flow$flow_m3s_nofire)[4], color = "black",linetype="dashed") +
   scale_color_manual(values = severity_colors_rev)+
-  theme_classic() +
-  facet_wrap(~factor(severity, level =c("LOW","MOD","HIGH")), nrow = 1, 
-             labeller = label_wrap_gen(10))
+  theme_classic()
+ # facet_wrap(~factor(severity, level =c("LOW","MOD","HIGH")), nrow = 1, 
+  #          labeller = label_wrap_gen(10))
 
 ecdf
 ```
