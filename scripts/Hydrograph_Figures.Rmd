@@ -53,7 +53,13 @@ https://www.wsp.wa.gov/2020/09/01/state-fire-mobilization-authorized-for-the-eva
 percent_outputs <- outputs_final %>%
   filter(climate == "base" & land_use == "base" & hydrology == "base" & slope == "base") %>%
     mutate(severity = fct_relevel(severity, "HIGH","MOD","LOW", "base"),
-           percent= fct_relevel(percent, "base", "10", "15", "20","25", "30", "40", "45", "50", "60", "75", "90", "100"))
+           percent= fct_relevel(percent, "base", "10", "15", "20","25", "30", "40", "45", "50", "60", "75", "90", "100"),
+           percent_groups = case_when(percent == "10"| percent == "15"| percent == "20" ~ "10-20",
+                                      percent == "25"| percent == "30"| percent == "40" ~ "25-40",
+                                      percent == "45"| percent == "50"| percent == "60" ~ "45-60",
+                                      percent == "75"| percent == "90"| percent == "100" ~ "75-100" ),
+           percent_groups = fct_relevel(percent_groups, "10-20","25-40","45-60", "75-100" ))
+            
 ```
 
 ## Plotting
@@ -90,27 +96,50 @@ https://vt-hydroinformatics.github.io/fdcs.html
 
 ```{r}
 severity_colors = c("#3B9AB2", "#E1AF00", "#F21A00")
+percent_burn_colors = c("#99d98c","#76c893","#52b69a","#005F73","#0A9396","#94D2BD","#E9D8A6","#EE9B00","#CA6702","#BB3E03","#AE2012","#9B2226")
+percent_linetypes = c(1,2,3,1,2,3,1,2,3,1,2,3)
 
 no_fire_flow <- percent_outputs %>%
   distinct(dates, .keep_all=TRUE) %>%
   select(dates, flow_m3s_nofire)
 
 
-ecdf <- percent_outputs %>%
+ecdf1 <- percent_outputs %>%
   group_by(short_scenario) %>%
   filter(!scenario == "base_burned") %>%
   filter(!percent == "base") %>%
-  ggplot(aes(flow_m3s_fire, color= severity, linetype = percent))+
-  stat_ecdf()+
+  ggplot(aes(flow_m3s_fire, color= percent, linetype = severity))+
+  stat_ecdf(size=1, alpha=0.6)+
   scale_x_log10()+
   geom_vline(xintercept = median(no_fire_flow$flow_m3s_nofire), color = "black")+
-  geom_vline(xintercept = quantile(no_fire_flow$flow_m3s_nofire)[4], color = "black",linetype="dashed") +
-  scale_color_manual(values = severity_colors_rev)+
+ # geom_vline(xintercept = quantile(no_fire_flow$flow_m3s_nofire)[4], color = "black",linetype="dashed") +
+  scale_color_manual(values = percent_burn_colors)+
   theme_classic()
  # facet_wrap(~factor(severity, level =c("LOW","MOD","HIGH")), nrow = 1, 
   #          labeller = label_wrap_gen(10))
 
+ecdf1
+
+ecdf <- percent_outputs %>%
+  group_by(short_scenario) %>%
+  filter(!scenario == "base_burned") %>%
+  filter(!percent == "base") %>%
+  ggplot(aes(flow_m3s_fire, color= severity, linetype=percent))+
+  stat_ecdf(size=1, alpha=0.6)+
+  scale_x_log10()+
+  geom_vline(xintercept = median(no_fire_flow$flow_m3s_nofire), color = "black")+
+ # geom_vline(xintercept = quantile(no_fire_flow$flow_m3s_nofire)[4], color = "black",linetype="dashed") +
+  scale_color_manual(values = severity_colors_rev)+
+  scale_linetype_manual(values= percent_linetypes)+
+  theme_classic() +
+  facet_wrap(~factor(percent_groups), nrow = 1, 
+             labeller = label_wrap_gen(10))
+  
+  #~factor(percent, level=c("10", "15", "20","25", "30", "40", "45", "50", "60", "75", "90", "100"))
+
 ecdf
+
+cowplot::save_plot("../figures/scenarios_flow_ecdf.jpeg", ecdf, base_height = 4, base_width = 8, dpi=600)
 ```
 Calculate flow exceedence probabilities
 
