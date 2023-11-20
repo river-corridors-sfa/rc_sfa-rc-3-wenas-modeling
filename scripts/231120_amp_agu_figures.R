@@ -46,12 +46,24 @@ make_geom_col_abs <- function(var, ref, y_label){
     theme(legend.title = element_text(hjust = 0.5))
 }
 
+p_width = 6
+p_height = 2.5
+
 plot_grid(make_geom_col_abs(sed_mg_l_fire, sed_mg_l_nofire, "TSS (mg/L)"),
           make_geom_col_abs(nit_mg_l_fire, nit_mg_l_nofire, "NO3 (mg/L)"),
           make_geom_col_abs(doc_mg_l_fire, doc_mg_l_nofire, "DOC (mg/L)"),
           ncol = 1, align = "hv", 
           labels = c("A", "B", "C"))
 ggsave("figures/agu_amp/3_Fig3_absolute_changes.png", width = 6, height = 7)
+
+make_geom_col_abs(sed_mg_l_fire, sed_mg_l_nofire, "TSS (mg/L)")
+ggsave("figures/agu_amp/3a_Fig3_tss.png", width = p_width, height = p_height)
+
+make_geom_col_abs(nit_mg_l_fire, nit_mg_l_nofire, "NO3 (mg/L)")
+ggsave("figures/agu_amp/3b_Fig3_nit.png", width = p_width, height = p_height)
+
+make_geom_col_abs(doc_mg_l_fire, doc_mg_l_nofire, "DOC (mg/L)")
+ggsave("figures/agu_amp/3c_Fig3_doc.png", width = p_width, height = p_height)
 
 make_geom_col_perc <- function(var, y_label){
   ggplot(df_means, aes(as.factor(percent), {{var}}, fill = severity)) + 
@@ -69,6 +81,15 @@ plot_grid(make_geom_col_perc(sed_perc, "% Change (TSS, mg/L)"),
           ncol = 1, align = "hv", 
           labels = c("A", "B", "C"))
 ggsave("figures/agu_amp/S1_percent_changes.png", width = 6, height = 7)
+
+make_geom_col_perc(sed_perc, "% Change (TSS, mg/L)")
+ggsave("figures/agu_amp/S1a_Fig3_tss.png", width = p_width, height = p_height)
+
+make_geom_col_perc(nitrate_perc, "% Change (NO3, mg/L)")
+ggsave("figures/agu_amp/S1b_Fig3_nit.png", width = p_width, height = p_height)
+
+make_geom_col_perc(doc_perc, "% Change (DOC, mg/L)")
+ggsave("figures/agu_amp/S1c_Fig3_doc.png", width = p_width, height = p_height)
 
 
 # 4. Calculate percent exceedences ---------------------------------------------
@@ -173,3 +194,61 @@ ggplot(percents) +
   ggtitle("Days below the 25th quantile of the unburned simulation") + 
   theme(legend.title = element_text(hjust = 0.5))
 ggsave("figures/agu_amp/4_fig4_quantile_exceedence_25th.png", width = 7, height = 8)
+
+
+## Just DOC 
+ggplot(percents %>% filter(column_prefix == "doc")) + 
+  geom_col(aes(x = as.factor(percent), y = per_ex_75_fire, fill = severity), 
+           position = "dodge", color = "black", alpha = 0.5) + 
+  geom_hline(aes(yintercept = per_ex_75_nofire)) + 
+  facet_wrap(~var, ncol = 1, scale = "free_y") + 
+  scale_fill_manual(values = severity_colors) + 
+  labs(x = "Simulated % of watershed burned", 
+       y = "% days exceeding 75th quantile (no fire)", 
+       fill = "Fire \n severity") + 
+  ggtitle("Days exceeding the 75th quantile of the unburned simulation") + 
+  theme(legend.title = element_text(hjust = 0.5))
+ggsave("figures/agu_amp/4a_fig4_quantile_exceedence_75th_doc.png", width = 7, height = 2.5)
+
+
+ggplot(percents %>% filter(column_prefix == "doc")) + 
+  geom_col(aes(x = as.factor(percent), y = per_ex_25_fire, fill = severity), 
+           position = "dodge", color = "black", alpha = 0.5) + 
+  geom_hline(aes(yintercept = per_ex_25_nofire)) + 
+  facet_wrap(~var, ncol = 1, scale = "free_y") + 
+  scale_fill_manual(values = severity_colors) + 
+  labs(x = "Simulated % of watershed burned", 
+       y = "% days below 25th quantile (no fire)", 
+       fill = "Fire \n severity") + 
+  ggtitle("Days below the 25th quantile of the unburned simulation") + 
+  theme(legend.title = element_text(hjust = 0.5))
+ggsave("figures/agu_amp/4b_fig4_quantile_exceedence_25th_doc.png", width = 7, height = 2.5)
+
+
+## Calculate fluxes figure for DOC ---------------------------------------------
+
+percent_burn_colors = c("#99d98c","#76c893","#52b69a","#005F73","#0A9396","#94D2BD","#E9D8A6","#EE9B00","#CA6702","#BB3E03","#AE2012","#9B2226")
+
+
+calculate_fluxes <- function(flow_var, conc_var){
+  
+}
+
+## DOC
+df %>% 
+  group_by(severity, percent) %>% 
+  select(dates, flow_m3s_fire, doc_mg_l_fire) %>% 
+  mutate(solute_kg_m3 = doc_mg_l_fire * (1e-6) * 1000, 
+         flow_m3_d = flow_m3s_fire * (60*60*24)) %>% 
+  mutate(solute_kg_d = solute_kg_m3 * flow_m3_d) %>% 
+  mutate(cusum = cumsum(solute_kg_d)) %>% 
+  ggplot(aes(dates, cusum, color = percent)) + 
+  geom_path(lwd = 1.5, alpha = 0.3) + 
+  geom_path() + 
+  scale_color_manual(values = percent_burn_colors) + 
+  facet_wrap(~severity, ncol = 1) + 
+  labs(x = "", y = "DOC loads (kg/d)", color = "Percent \n burned") + 
+  theme(legend.title = element_text(hjust = 0.5))
+ggsave("figures/agu_amp/5_doc_fluxes.png", width = 7, height = 6)
+
+
