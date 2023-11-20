@@ -85,22 +85,103 @@ calculate_exceedence <- function(my_scenario,
   return(result_df)
 }
 
+calculate_exceedences <- function(my_scenario, 
+                                 col_prefix) {
+  
+  data <- df %>% 
+    filter(scenario == my_scenario)
+  
+  # Construct regular expressions to match the column names
+  nofire_pattern <- paste0("^", col_prefix, ".*_nofire$")
+  fire_pattern <- paste0("^", col_prefix, ".*_fire$")
+  
+  # Find the column names that match the patterns
+  col_nofire <- grep(nofire_pattern, names(data), value = TRUE)
+  col_fire <- grep(fire_pattern, names(data), value = TRUE)
+  
+  if (length(col_nofire) == 0 || length(col_fire) == 0) {
+    stop("No matching columns found for the specified prefix.")
+  }
+  
+  # Calculate the 75th quantile for the _nofire column
+  upper_quantile_value <- quantile(data %>% pull(col_nofire), 0.75)
+  lower_quantile_value <- quantile(data %>% pull(col_nofire), 0.25)
+  
+  # Calculate the number of rows in the data
+  n_total <- nrow(data)
+  
+  # Calculate the number of rows exceeding the 75th quantile for _nofire and _fire
+  n_75_nofire <- nrow(data %>% filter(!!sym(col_nofire) > upper_quantile_value))
+  n_75_fire <- nrow(data %>% filter(!!sym(col_fire) > upper_quantile_value))
+  n_25_nofire <- nrow(data %>% filter(!!sym(col_nofire) < lower_quantile_value))
+  n_25_fire <- nrow(data %>% filter(!!sym(col_fire) < lower_quantile_value))
+  
+  # Calculate the percentage of exceedence for _nofire and _fire
+  per_ex_75_nofire <- (n_75_nofire / n_total) * 100
+  per_ex_75_fire <- (n_75_fire / n_total) * 100
+  per_ex_25_nofire <- (n_25_nofire / n_total) * 100
+  per_ex_25_fire <- (n_25_fire / n_total) * 100
+  
+  # Extract "percent" and "severity" from my_scenario using stringr
+  percent <- as.numeric(str_extract(my_scenario, "\\d+\\.?\\d*"))
+  severity <- str_extract(my_scenario, "([A-Z]+)$")
+  
+  # Create a data frame with the results
+  result_df <- tibble(
+    percent = percent, 
+    severity = severity, 
+    column_prefix = col_prefix,
+    q25 = lower_quantile_value,
+    q75 = upper_quantile_value,
+    n_total = n_total,
+    n_75_nofire = n_75_nofire,
+    n_75_fire = n_75_fire,
+    per_ex_75_nofire = per_ex_75_nofire,
+    per_ex_75_fire = per_ex_75_fire, 
+    n_25_nofire = n_25_nofire,
+    n_25_fire = n_25_fire,
+    per_ex_25_nofire = per_ex_25_nofire,
+    per_ex_25_fire = per_ex_25_fire
+  )
+  
+  return(result_df)
+}
+
 all_scenarios <- expand_grid(scenario = unique(df$scenario), 
                              col_name = c("sed", "nit", "doc"))
 
-percents <- pmap_df(list(all_scenarios$scenario, all_scenarios$col_name), calculate_exceedence) %>% 
+percents <- pmap_df(list(all_scenarios$scenario, all_scenarios$col_name), calculate_exceedences) %>% 
   mutate(percent = as.factor(as.numeric(percent)), 
          severity = factor(severity, levels = c("LOW", "MOD", "HIGH"))) %>% 
-  mutate(diff_fire_nofire = per_ex_fire - per_ex_nofire) %>% 
+  mutate(diff_fire_nofire = per_ex_75_fire - per_ex_75_nofire) %>% 
   mutate(var = fct_relevel(column_prefix, "sed", "nit", "doc"))
 
 ggplot(percents) + 
-  geom_col(aes(x = as.factor(percent), y = diff_fire_nofire, fill = severity), 
+  geom_col(aes(x = as.factor(percent), y = per_ex_75_fire, fill = severity), 
            position = "dodge", color = "black", alpha = 0.5) + 
+  geom_hline(aes(yintercept = per_ex_75_nofire)) + 
   facet_wrap(~var, ncol = 1, scale = "free_y") + 
   scale_fill_manual(values = severity_colors) + 
-  labs(x = "Percent", y = "% (fire) - % (no fire)")
-ggsave("figures/4_fig4_quantile_exceedence_v1.png", width = 7, height = 8)
+  labs(x = "Percent of simulated watershed burned", 
+       y = "% days exceeding 75th quantile (no fire)", 
+       fill = "Burn \n severity") + 
+  ggtitle("Days exceeding the 75th quantile of the unburned simulation") + 
+  theme(legend.title = element_text(hjust = 0.5))
+ggsave("figures/agu_amp/4_fig4_quantile_exceedence_75th.png", width = 7, height = 8)
+
+
+ggplot(percents) + 
+  geom_col(aes(x = as.factor(percent), y = per_ex_25_fire, fill = severity), 
+           position = "dodge", color = "black", alpha = 0.5) + 
+  geom_hline(aes(yintercept = per_ex_25_nofire)) + 
+  facet_wrap(~var, ncol = 1, scale = "free_y") + 
+  scale_fill_manual(values = severity_colors) + 
+  labs(x = "Percent of simulated watershed burned", 
+       y = "% days below 25th quantile (no fire)", 
+       fill = "Burn \n severity") + 
+  ggtitle("Days below the 25th quantile of the unburned simulation") + 
+  theme(legend.title = element_text(hjust = 0.5))
+ggsave("figures/agu_amp/4_fig4_quantile_exceedence_25th.png", width = 7, height = 8)
 
 
 my_comparisons = list(c("LOW", "MOD"), 
