@@ -12,7 +12,7 @@ p_load(tidyverse,
        cowplot)
 
 ## Set ggplot theme and color palette
-theme_set(theme_bw())
+theme_set(theme_classic())
 #fire_colors = c("#F5C63C", "#F47F6B", "#BB5098")
 severity_colors = c("#3B9AB2", "#E1AF00", "#F21A00")
 
@@ -54,21 +54,21 @@ plot_grid(make_geom_col_abs(sed_mg_l_fire, sed_mg_l_nofire, "TSS (mg/L)"),
           make_geom_col_abs(doc_mg_l_fire, doc_mg_l_nofire, "DOC (mg/L)"),
           ncol = 1, align = "hv", 
           labels = c("A", "B", "C"))
-ggsave("figures/agu_amp/3_Fig3_absolute_changes.png", width = 6, height = 7)
+#ggsave("figures/agu_amp/3_Fig3_absolute_changes.png", width = 6, height = 7)
 
 make_geom_col_abs(sed_mg_l_fire, sed_mg_l_nofire, "TSS (mg/L)")
-ggsave("figures/agu_amp/3a_Fig3_tss.png", width = p_width, height = p_height)
+#ggsave("figures/agu_amp/3a_Fig3_tss.png", width = p_width, height = p_height)
 
 make_geom_col_abs(nit_mg_l_fire, nit_mg_l_nofire, "NO3 (mg/L)")
-ggsave("figures/agu_amp/3b_Fig3_nit.png", width = p_width, height = p_height)
+#ggsave("figures/agu_amp/3b_Fig3_nit.png", width = p_width, height = p_height)
 
 make_geom_col_abs(doc_mg_l_fire, doc_mg_l_nofire, "DOC (mg/L)")
-ggsave("figures/agu_amp/3c_Fig3_doc.png", width = p_width, height = p_height)
+#ggsave("figures/agu_amp/3c_Fig3_doc.png", width = p_width, height = p_height)
 
 make_geom_col_perc <- function(var, y_label){
   ggplot(df_means, aes(as.factor(percent), {{var}}, fill = severity)) + 
     geom_col(position = "dodge", color = "black", alpha = 0.5) + 
-    scale_fill_manual(values = severity_colors) + 
+    scale_fill_manual(values = severity_colors)
     labs(x = "Simulated % of watershed burned", 
          y = y_label, 
          fill = "Fire \n Severity") + 
@@ -80,16 +80,16 @@ plot_grid(make_geom_col_perc(sed_perc, "% Change (TSS, mg/L)"),
           make_geom_col_perc(doc_perc, "% Change (DOC, mg/L)"), 
           ncol = 1, align = "hv", 
           labels = c("A", "B", "C"))
-ggsave("figures/agu_amp/S1_percent_changes.png", width = 6, height = 7)
+#ggsave("figures/agu_amp/S1_percent_changes.png", width = 6, height = 7)
 
-make_geom_col_perc(sed_perc, "% Change (TSS, mg/L)")
-ggsave("figures/agu_amp/S1a_Fig3_tss.png", width = p_width, height = p_height)
+make_geom_col_perc(sed_perc, "% Change (TSS, mg/L)") 
+ggsave("figures/agu_amp/S1a_Fig3_tss_amp.png", width = p_width, height = p_height)
 
 make_geom_col_perc(nitrate_perc, "% Change (NO3, mg/L)")
-ggsave("figures/agu_amp/S1b_Fig3_nit.png", width = p_width, height = p_height)
+ggsave("figures/agu_amp/S1b_Fig3_nit_amp.png", width = p_width, height = p_height)
 
 make_geom_col_perc(doc_perc, "% Change (DOC, mg/L)")
-ggsave("figures/agu_amp/S1c_Fig3_doc.png", width = p_width, height = p_height)
+ggsave("figures/agu_amp/S1c_Fig3_doc_amp.png", width = p_width, height = p_height)
 
 
 # 4. Calculate percent exceedences ---------------------------------------------
