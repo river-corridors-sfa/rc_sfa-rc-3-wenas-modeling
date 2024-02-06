@@ -47,3 +47,4 @@ vignettes/*.pdf
 data/stat_summaries
 
 pr_work/
+scripts/Flow Duration Curves_MultipleModels_Paired.R
