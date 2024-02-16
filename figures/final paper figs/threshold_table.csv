@@ -1,0 +1,4 @@
+"severity","nitrate_threshold","doc_threshold"
+"Low",50,100
+"Moderate",20,75
+"High",10,75
