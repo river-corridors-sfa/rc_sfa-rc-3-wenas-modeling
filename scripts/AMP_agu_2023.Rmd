@@ -199,7 +199,8 @@ ggsave("../figures/agu_amp/tss_mean_line.png", plot = tss_line)
 Rust et al percent changes 
 ```{r rust}
 
-rust <- readxl::read_excel("../data/rust_percent_change.xlsx")
+rust <- readxl::read_excel("../data/rust_percent_change.xlsx") %>%
+  filter(!variable == "TSS")
 
 rust_mean_percent_area_burn = 18
 
@@ -210,9 +211,10 @@ rust_fig <- ggplot(rust, aes(variable, percent_change_concentration, fill = vari
          y = "Mean Percent Change in Western CONUS (%)") + 
     theme(axis.title = element_text(size = 15),
           axis.text = element_text(size = 15),
-          legend.title = element_text(hjust = 0.5))
+          legend.title = element_text(hjust = 0.5)) +
+  theme_classic()
 
-ggsave("../figures/agu_amp/rust_fig.png", plot = rust_fig)
+ggsave("../figures/agu_amp/rust_fig_ESSPI.png", plot = rust_fig)
 
 rust_fig 
 ```
