@@ -31,7 +31,7 @@ severity <- as.data.frame(severity_crop, xy = T) %>%
   rename("long" = x, 
          "lat" = y, 
          "severity" = Layer_1) %>% 
-  filter(!is.na(severity))
+  filter(!is.na(severity)) 
 
 
 ggplot() + 
