@@ -116,7 +116,7 @@ ggplot() +
 elevation_raw <- get_elev_raster(wenas_huc10, z = 10)
 
 ## Crop DEM (don't need to reproject because default is WGS84)
-elevation_crop <- mask(elevation_raw, wenas_huc12)
+elevation_crop <- mask(elevation_raw, wenas_huc10)
 
 ## Convert to dataframe
 elevation <- as.data.frame(elevation_crop, xy = T) %>% 
@@ -134,7 +134,7 @@ fire_colors <- c("#54A266", "#F5F54F", "#F8B75B", "#FA8B63", "#FC543D", "#FF0F0F
 
 ## Make map
 ggplot() + 
-  geom_sf(data = wenas_huc12, fill = NA, color = "black") +
+  geom_sf(data = wenas_huc10, fill = NA, color = "black") +
   geom_raster(data = elevation, aes(long, lat, fill = elevation), show.legend = F, alpha = 0.8) +
   scale_fill_gradientn(colors = c("#EFF7EA", "#ADD7A1", "#5FA965", "#245836", "#911C43")) +
   new_scale_fill() + 
