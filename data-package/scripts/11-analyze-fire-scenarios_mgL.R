@@ -43,9 +43,25 @@
   #' @param fire the date of the wildfire
   #'
   #'
-  ## to do: make parallel
-  clean_flow <- function(file_name, n_sub, start="2005-01-01", end="2018-12-31", outlet, area, fire){
-    #load data
+  clean_flow <- function(file_name, file_loc, n_sub=21, start="2005-01-01", end="2018-12-31", outlet=1, area, fire){
+    #calculate richard baker flashiness index (Baker et al. 2004)
+    rb_flashiness <- function(timeseries, solute){
+      df <- timeseries %>% dplyr::select(dates, any_of(solute))
+      
+      #replace NA's with 0 
+      #df[is.na(df[,2]) == T,2] <- 0
+      vals <- unlist(as.vector(df[-nrow(df),2]))
+      df$shift <- c(NA, vals)
+      df$dif <- abs(df[,2]- df[,3])
+      rb_index <- sum(df$dif, na.rm = T) / sum(df[,2])
+      
+      return(rb_index)
+    } 
+    
+    name <- gsub("_output.rch", "_clean_rch.csv", file_name)
+    save_file <- file.path("~/1_Research/4_Wenas_Thresholds/clean data/rch_files_lvl1", file_loc, name)
+    if(file.exists(save_file) == F){
+      #load data
       reach <- fread(file_name, skip = 9)
       #reach <- read_table(file_name, col_names = FALSE, skip = 9)
       reach <- reach[,c(2,7,11,12,14,16,18,24,34)]
@@ -55,8 +71,8 @@
       dates <- seq(from=as.Date(start), to=as.Date(end), by="day")
       dates <- rep(dates, n_sub)
       reach$dates <- dates[order(dates)]
-    
-    #get concentrations
+      
+      #get concentrations
       reach$flow_L <- reach$flow * 60*60*24* 1000 #flow in L per day  
       reach$org_n_mgL <- reach$org_n * 1e6 / reach$flow_L 
       reach$org_p_mgL <- reach$org_p * 1e6 / reach$flow_L 
@@ -64,8 +80,8 @@
       reach$othop_mgL <- reach$othop * 1e6 / reach$flow_L
       reach$doc_mgL <- reach$doc * 1e6 / reach$flow_L 
       reach$sed_conc_check <- reach$sed  * 1e6 / reach$flow_L  *1000 
-    
-    #add info about scenario 
+      
+      #add info about scenario 
       if(grepl("UNBURN", file_name)){
         reach$scenario <- str_split_i(file_name, "_", i=1)
         reach$sev <- str_split_i(file_name, "_", i=1) 
@@ -75,11 +91,15 @@
         reach$sev <- str_split_i(file_name, "_", i=3) 
         reach$year <- str_split_i(file_name, "_", i=4) 
       }
-    
-    #write level 1 dataset (daily values)
-      fwrite(reach, file.path("~/1_Research/4_Wenas_Thresholds/clean data/rch_files_lvl1/", paste(reach$scenario[1], reach$sev[1], reach$year[1],  "clean_rch.csv", sep="_")))
+      
+      #write level 1 dataset (daily values)
+      fwrite(reach, save_file)
       #write_csv(reach, file.path("rch_files_lvl1/", paste(reach$scenario[1], reach$sev[1], reach$year[1],  "clean_rch.csv", sep="_"))) 
       
+    }else{
+      reach <- fread(save_file)
+    }
+    
     #get annual values 
       #subset to post-fire year at outlet
         reach_fire <- reach[reach$dates >= as.Date(fire) & reach$dates < (as.Date(fire) + years(1)) & reach$subbasin == outlet,]
@@ -98,11 +118,32 @@
       #get richard baker flashiness 
         rb_doc <- rb_flashiness(reach_fire, "doc_mgL")
         rb_nit <- rb_flashiness(reach_fire, "nitrate_mgL")
+        rb_doc_ld <- rb_flashiness(reach_fire, "doc")
+        rb_nit_ld <- rb_flashiness(reach_fire, "nitrate")
       
       #sum to mm/yr and kg/yr 
-        annual <- reach_fire %>% group_by(scenario, sev, year) %>% 
-          summarise(flow_mm_yr = sum(flow_mm_d), nitrate_kg_yr = sum(nitrate), doc_kg_yr = sum(doc), 
-                    doc_rb = rb_doc, nitrate_rb = rb_nit, .groups = "drop")
+        annual2 <- reach_fire %>% group_by(scenario, sev, year) %>% 
+          summarise(flow_mm_yr = sum(flow_mm_d), 
+                    nitrate_kg_yr = sum(nitrate), 
+                    avg_nitrate_mgL = mean(nitrate_mgL), 
+                    sd_nitrate_mgL = sd(nitrate_mgL), 
+                    q_05_nitrate = quantile(nitrate_mgL, 0.05),
+                    q_25_nitrate = quantile(nitrate_mgL, 0.25),
+                    q_50_nitrate = quantile(nitrate_mgL, 0.5),
+                    q_75_nitrate = quantile(nitrate_mgL, 0.75),
+                    q_95_nitrate = quantile(nitrate_mgL, 0.95),
+                    doc_kg_yr = sum(doc), 
+                    avg_doc_mgL = mean(doc_mgL),
+                    sd_doc_mgL = sd(doc_mgL),
+                    q_05_doc = quantile(doc_mgL, 0.05),
+                    q_25_doc = quantile(doc_mgL, 0.25),
+                    q_50_doc = quantile(doc_mgL, 0.5),
+                    q_75_doc = quantile(doc_mgL, 0.75),
+                    q_95_doc = quantile(doc_mgL, 0.95),
+                    .groups = "drop") %>% 
+          mutate(nitrate_rb = rb_nit, nitrate_rb_ld=rb_nit_ld,
+                 doc_rb = rb_doc, doc_rb_ld=rb_doc_ld 
+                    )
       
       return(annual) #output so we can merge together and save
   }
@@ -201,9 +242,23 @@
       files <- list.files()
       rch <- files[file_ext(files) == "rch"]
 
-    #run cleaning script (this can take an hour or so)
-      annuals <- bind_rows(pblapply(rch, clean_flow, n_sub=21, outlet=outlet, area=area, fire=fire))
-      
+    #run cleaning script (this can take a bit)
+      library(doSNOW)
+      library(parallelly)
+      library(foreach)
+      nCores <- parallelly::availableCores() - 1
+      cl <- parallel::makeCluster(nCores)
+      doSNOW::registerDoSNOW(cl)
+      pb <- txtProgressBar(max = length(rch), style = 3)
+      progress <- function(n) setTxtProgressBar(pb, n)
+      opts <- list(progress = progress)
+      data <- foreach(i=1:length(rch), .options.snow = opts,
+                      .packages=c("data.table", "stringr", "dplyr", "lubridate"), 
+                      .combine=rbind) %dopar%{
+                        df <- clean_flow(rch[i], n_sub=21, file_loc="American", outlet=outlet, area=area, fire=fire)
+                        return(df)}
+      stopCluster(cl)
+
       annuals <- annuals[annuals$year != "1987",] #ran an extra year for the american, remove that to get 30 years
     
     #load precip data 
@@ -250,11 +305,23 @@
       #get file names 
       files <- list.files()
       rch <- files[file_ext(files) == "rch"]
-      #rch <- rch[c(869:899, 32:62,218:248, 1861:1891)]
-      
+
       #run cleaning script (this can take a bit)
-      annuals <- bind_rows(pblapply(rch, clean_flow, n_sub=21, outlet=outlet, area=area, fire=fire))
-      
+      library(doSNOW)
+      library(parallelly)
+      library(foreach)
+      nCores <- parallelly::availableCores() - 1
+      cl <- parallel::makeCluster(nCores)
+      doSNOW::registerDoSNOW(cl)
+      pb <- txtProgressBar(max = length(rch), style = 3)
+      progress <- function(n) setTxtProgressBar(pb, n)
+      opts <- list(progress = progress)
+      data <- foreach(i=1:length(rch), .options.snow = opts,
+                      .packages=c("data.table", "stringr", "dplyr", "lubridate"), 
+                      .combine=rbind) %dopar%{
+                        df <- clean_flow(rch[i], n_sub=21, file_loc="Tule",outlet=outlet, area=area, fire=fire)
+                        return(df)}
+      stopCluster(cl)
       annuals <- annuals[annuals$year != "1987",] #ran an extra year for the american, remove that to get 30 years
       
       #load precip data 
