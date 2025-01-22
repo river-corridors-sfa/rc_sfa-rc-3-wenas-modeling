@@ -397,6 +397,42 @@
     return(data)
   }
   
+  #get percent change from unburned for a metric 
+  perc_change <- function(data, metric){
+    #basic percent change function
+    change <- function(old, new){
+      per <- (new - old) / old * 100
+      return(per)
+    } 
+    
+    annual_change <- data %>% select(any_of(c("basin", "year","sev", "real_per", metric))) %>% 
+      pivot_wider(names_from=sev, values_from=!!sym(metric)) %>% 
+      fill(UNBURN, .direction="up") %>% 
+      mutate(LOW = per_change(UNBURN, LOW), 
+             MOD = per_change(UNBURN, MOD),
+             HIGH = per_change(UNBURN, HIGH),
+             UNBURN = per_change(UNBURN, UNBURN)) %>% select(basin, year,real_per, LOW, MOD, HIGH, UNBURN) %>% 
+      pivot_longer(LOW:UNBURN, values_to = metric,  names_to = "sev") 
+    
+    #remove scenarios that don't make sense (0 percent burn but not burned, greater than 0 burn but unburned)
+    annual_change <- annual_change[!(annual_change$real_per == 0 & annual_change$sev != "UNBURN"),]
+    annual_change <- annual_change[!(annual_change$real_per > 0 & annual_change$sev== "UNBURN"),]
+    annual_change$sev <- factor(annual_change$sev, levels=c("UNBURN","LOW", "MOD", "HIGH"), ordered = T)
+    
+    annual_change <- annual_change %>% group_by(basin, sev, real_per) %>%
+      summarise(
+        q_0.05 = quantile(get(metric), 0.05),
+        q_0.25 = quantile(get(metric), 0.25),
+        q_0.5  = quantile(get(metric), 0.5),
+        q_0.75 = quantile(get(metric), 0.75),
+        q_0.95 = quantile(get(metric), 0.95),
+        mean = mean(get(metric)),
+        sd= sd(get(metric)))
+    
+    write.csv(annual_change, file.path(data_save_path, "rch_files_lvl2/nitrate_annual_perc_change.csv"), row.names=F)
+    
+  }
+  
 #section 1: figure 1: map of the two basins with landuse/dem --------
     #data for coloring landuse 
     landuse_cols <- c("Water" = "#476BA0", "Developed" = "#D89382", "Barren" = "#B2ADA3", 
@@ -531,7 +567,7 @@
       dev.off()    
       
       
-#section 4: figure 3: nitrate load and flashiness index ------ 
+#section 4: figure 3: nitrate load, concentration, and flashiness index ------ 
   #load annual reach summaries 
     data <- load_annual(data_save_path)
   
@@ -539,17 +575,20 @@
     p1 <- threshold_plot(data %>% mutate(nitrate_kg_yr = nitrate_kg_yr / 10000), 
                            "nitrate_kg_yr", "Annual Nitrate Load (10\u2074 kg)")  
     
+  #get concentration
+    p2 <- threshold_plot(data, "avg_nitrate_mgL", "Average Nitrate Concentration (mg L\u207B\u00B9)")  
+    
   #get nitrate rb index for concentrations 
-    p2 <- threshold_plot(data, "nitrate_rb", "Richard Baker Flashiness Index") 
+    p3 <- threshold_plot(data, "nitrate_rb", "Richard Baker Flashiness Index") 
     
   #combine and save 
-    png(file.path(fig_save_path, "fig3-nitrate_load_rb.png"),
-        res=300, units="cm", width=30, height=30)
-    ggpubr::ggarrange(p1,p2, ncol=1,  common.legend = TRUE, legend="bottom",
+    png(file.path(fig_save_path, "fig3-nitrate_load_con_rb.png"),
+        res=300, units="cm", width=30, height=45)
+    ggpubr::ggarrange(p1,p2,p3, ncol=1,  common.legend = TRUE, legend="bottom",
                       labels="auto", font.label = list(size=30))
     dev.off() 
 
-#section 5: figure 4: doc load and flashiness index ------- 
+#section 5: figure 4: doc load, concentration, and flashiness index ------- 
   #load annual reach summaries 
     data <- load_annual(data_save_path)
     
@@ -557,13 +596,16 @@
     p1 <- threshold_plot(data %>% mutate(doc_kg_yr = doc_kg_yr / 10000), 
                          "doc_kg_yr", "Annual DOC Load (10\u2074 kg)")  
     
-    #get doc rb index for concentrations 
-    p2 <- threshold_plot(data, "doc_rb", "Richard Baker Flashiness Index") 
+  #get average concentraiton 
+    p2 <- threshold_plot(data, "avg_doc_mgL", "Average DOC Concentration (mg L\u207B\u00B9)") 
+    
+  #get doc rb index for concentrations 
+    p3 <- threshold_plot(data, "doc_rb", "Richard Baker Flashiness Index") 
     
     #combine and save 
-    png(file.path(fig_save_path, "fig4-doc_load_rb.png"),
-        res=300, units="cm", width=30, height=30)
-    ggpubr::ggarrange(p1,p2, ncol=1,  common.legend = TRUE, legend="bottom",
+    png(file.path(fig_save_path, "fig4-doc_load_con_rb.png"),
+        res=300, units="cm", width=30, height=45)
+    ggpubr::ggarrange(p1,p2,p3, ncol=1,  common.legend = TRUE, legend="bottom",
                       labels="auto", font.label = list(size=30))
     dev.off() 
     
@@ -615,22 +657,7 @@
     plot_grid(p1, p2, ncol=1, labels = "auto", rel_heights =c(0.94, 1), label_size=30)
     dev.off()
     
-#section 7: figure A2: nitrate and doc concentration changes ------ 
-  #load annual reach summaries 
-    data <- load_annual(data_save_path)
-  
-  #get nitrate and doc concentration changes  
-    p1 <- threshold_plot(data, "avg_nitrate_mgL", "Average Nitrate Concentration (mg L\u207B\u00B9)")  
-    p2 <- threshold_plot(data, "avg_doc_mgL", "Average DOC Concentration (mg L\u207B\u00B9)") 
-    
-  #combine 
-    png(file.path(fig_save_path, "figA2-doc_nitrate_conc.png"),
-        res=300, units="cm", width=30, height=30)
-    ggpubr::ggarrange(p1,p2, ncol=1,  common.legend = TRUE, legend="bottom",
-                      labels="auto", font.label = list(size=30))
-    dev.off()    
-    
-#section 8: figure A3: change in flow partitioning ------ 
+#section 7: figure A2: change in flow partitioning ------ 
   #load data
     df <- read.csv(file.path(data_save_path, "hru_summary_american.csv"))
     df$basin <- "Humid, Forested Basin"
@@ -670,10 +697,10 @@
       theme(strip.text = element_text(margin = ggplot2:::margin(t = 7, r = 7, b =7, l = 7),
                                       size=14)) + 
       
-      png(file.path(fig_save_path, "figA3-flow_paths.png"),
+      png(file.path(fig_save_path, "figA2-flow_paths.png"),
           res=300, units="cm", width=20, height=20)
       p1
       dev.off()    
     
-#section 9: table A2: best fit line fits and thresholds ------ 
+#section 8: table A2: best fit line fits and thresholds ------ 
   
