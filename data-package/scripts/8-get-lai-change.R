@@ -411,7 +411,7 @@
       new[1] <- titles$header[count]
       
       #replace value
-      values <- str_split2(new[2],"   ")
+      values <- str_split_1(new[2],"   ")
       values[4] <- round(titles$value[count],5)
       new[2] <- paste(values, collapse = "  ")
       df <- c(df, new)

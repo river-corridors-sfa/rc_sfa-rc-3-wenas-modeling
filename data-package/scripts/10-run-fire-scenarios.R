@@ -97,12 +97,12 @@
 #section 2: run Tule scenarios ------- 
   #specify working directories
   scenariowd <- "~/1_Research/4_Wenas_Thresholds/data/Tule_River/Scenario Changes" #where files for scenarios are kept
-  modelwd <- "C:/SWAT/Tule River Simp2/Tule River Simp2/Scenarios/Tule River Simp2.Sufi2.SwatCup" #where model lives
+  modelwd <- "C:/SWAT/Tule River Simp2/Tule River Simp2/Scenarios/Tule River Simp2.Sufi2.SwatCup" #where model lives, needs to have correct parameters
   cleandatwd <- "~/1_Research/4_Wenas_Thresholds/data/tule_scenario_outputs" #where to put output files 
   
   per <- seq(from=5, to=100, by=5)
   sev <- c("LOW", "MOD" , "HIGH")
-  years <- 1987:2017
+  years <- 1988:2017
   
   scenarios <- c("UNBURN", paste(rep(per, length(sev)), rep(sev, each=length(per)), sep="_"))
   scenarios <- c( paste(rep(scenarios, length(years)), rep(years, each=length(scenarios)), sep="_") )
