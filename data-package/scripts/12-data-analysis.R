@@ -1,8 +1,8 @@
 ## analyze the wildfire scenarios output from fire scenarios after cleaning with 11-clean-model-outputs 
   #written by Katie A. Wampler on 10-25-2024 
 
-  fig_save_path <-  "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/figures"
-  data_save_path <-  "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/summary-outputs"
+  fig_save_path <-  "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/figures"
+  data_save_path <-  "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/tables"
 
 #section 0: load libraries and functions -------
   library(tools)
@@ -429,8 +429,12 @@
         mean = mean(get(metric)),
         sd= sd(get(metric)))
     
-    write.csv(annual_change, file.path(data_save_path, "rch_files_lvl2/nitrate_annual_perc_change.csv"), row.names=F)
+    annual_sum <- annual_change %>% group_by(basin, sev) %>% 
+      summarise(min = min(mean),
+                max = max(mean))
+    write.csv(annual_sum, file.path(data_save_path, paste0(metric, "_perc_change.csv")), row.names=F)
     
+    return(annual_change)
   }
   
 #section 1: figure 1: map of the two basins with landuse/dem --------
@@ -459,6 +463,12 @@
     #reclass to make less landuses 
     landuse <- merge(landuse, lookup, by.x="val", by.y="number")
     
+    #get limits for text label 
+    xjust <- 0.8
+    yjust <- 0.03
+    ext <- extent(dem)
+    x <- ext[1] + (ext[2]-ext[1])*xjust
+    y <- ext[3] + (ext[4]-ext[3])*yjust
     p1 <- ggplot()+
       geom_raster(data=dem, aes(x=x, y=y,fill=val), show.legend = F) + 
       scale_fill_gradient(low="gray10", high="gray90")+ 
@@ -468,7 +478,9 @@
       geom_sf(data=streams, color="#00008b", linewidth=0.75) + theme_bw() + 
       theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
             axis.text.x = element_text(angle = 45, hjust=1)) + 
-      scale_fill_manual(values=landuse_cols) + labs(fill="Land Cover")
+      scale_fill_manual(values=landuse_cols) + labs(fill="Land Cover") + 
+      annotate(geom = "text", x = x, y = y, label = "Humid, Forested Basin",
+               size=5, fontface="bold") 
   
   
   #plot tule
@@ -486,6 +498,13 @@
     #reclass to make less landuses 
     landuse <- merge(landuse, lookup, by.x="val", by.y="number")
     
+    #get limits for text label
+    xjust <- 0.7
+    yjust <- 0.03
+    ext <- extent(dem)
+    x <- ext[1] + (ext[2]-ext[1])*xjust
+    y <- ext[3] + (ext[4]-ext[3])*yjust
+    
     p2 <- ggplot()+
       geom_raster(data=dem, aes(x=x, y=y,fill=val), show.legend = F) + 
       scale_fill_gradient(low="gray10", high="gray90")+ 
@@ -495,8 +514,10 @@
       geom_sf(data=streams, color="#00008b", linewidth=0.75) + theme_bw() + 
       theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
             axis.text.x = element_text(angle = 45, hjust=1)) + 
-      scale_fill_manual(values=landuse_cols) + labs(fill="Land Cover")
-    
+      scale_fill_manual(values=landuse_cols) + labs(fill="Land Cover")+ 
+      annotate(geom = "text", x = x, y = y, label = "Semi-Arid, Mixed Land Use Basin",
+               size=5, fontface="bold") 
+     
     png(file.path(fig_save_path, "fig1-basin_maps.png"), units="cm", height = 15, width=30, res=300)
     ggarrange(p1, p2, ncol=2, labels="auto", common.legend = T, legend="bottom",
               font.label = list(size=30), align=c("h"), label.x=0.11, label.y=0.98)
@@ -588,6 +609,9 @@
                       labels="auto", font.label = list(size=30))
     dev.off() 
 
+  #get perc change in concentration for results 
+    nitrate_change <- perc_change(data, "avg_nitrate_mgL")
+    
 #section 5: figure 4: doc load, concentration, and flashiness index ------- 
   #load annual reach summaries 
     data <- load_annual(data_save_path)
@@ -608,6 +632,9 @@
     ggpubr::ggarrange(p1,p2,p3, ncol=1,  common.legend = TRUE, legend="bottom",
                       labels="auto", font.label = list(size=30))
     dev.off() 
+    
+  #get perc change in concentration for results 
+    doc_change <- perc_change(data, "avg_doc_mgL")
     
 #section 6: figure A1: wildfire scenarios ------ 
   #plot american 
