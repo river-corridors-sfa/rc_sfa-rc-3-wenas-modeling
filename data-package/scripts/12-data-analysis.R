@@ -605,7 +605,7 @@
   #combine and save 
     png(file.path(fig_save_path, "fig3-nitrate_load_con_rb.png"),
         res=300, units="cm", width=30, height=45)
-    ggpubr::ggarrange(p1,p2,p3, ncol=1,  common.legend = TRUE, legend="bottom",
+    ggpubr::ggarrange(p2,p1,p3, ncol=1,  common.legend = TRUE, legend="bottom",
                       labels="auto", font.label = list(size=30))
     dev.off() 
 
@@ -629,7 +629,7 @@
     #combine and save 
     png(file.path(fig_save_path, "fig4-doc_load_con_rb.png"),
         res=300, units="cm", width=30, height=45)
-    ggpubr::ggarrange(p1,p2,p3, ncol=1,  common.legend = TRUE, legend="bottom",
+    ggpubr::ggarrange(p2,p1,p3, ncol=1,  common.legend = TRUE, legend="bottom",
                       labels="auto", font.label = list(size=30))
     dev.off() 
     
