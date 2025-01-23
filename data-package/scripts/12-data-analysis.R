@@ -361,7 +361,7 @@
     
     #american 
     area <- 206.834425 #km2
-    annuals_a <- read_csv(file.path(data_save_path, "annual_loads_rch_american.csv"))
+    annuals_a <- read_csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "annual_loads_rch_american.csv"))
     annuals_a$perc <- ifelse(annuals_a$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_a$scenario, "_", i=2)))
     annuals_a$sev <- factor(annuals_a$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
@@ -377,7 +377,7 @@
     
     #tule 
     area <- 249.9807#km2
-    annuals_t <- read_csv(file.path(data_save_path, "annual_loads_rch_tule.csv"))
+    annuals_t <- read_csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "annual_loads_rch_tule.csv"))
     annuals_t$perc <- ifelse(annuals_t$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_t$scenario, "_", i=2)))
     annuals_t$sev <- factor(annuals_t$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
@@ -588,6 +588,40 @@
       dev.off()    
       
       
+  #get change in flowpaths 
+      #load data
+      df <- read.csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "hru_summary_american.csv"))
+      df$basin <- "Humid, Forested Basin"
+      
+      df2 <- read.csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "hru_summary_tule.csv"))
+      df2$basin <- "Semi-Arid, Mixed Land Use Basin"
+      flow <- rbind(df, df2)
+      flow <- flow[flow$year != 1987,] #remove the extra year
+      
+      annual_change <- flow %>% select(any_of(c("basin", "year","sev", "scenario", "SURQ", "LATQ", "GWQ"))) %>% 
+        pivot_longer(SURQ:GWQ, names_to = "flow", values_to="value_mm") %>%
+        pivot_wider(names_from=scenario, values_from=value_mm)
+        
+      unburn <- annual_change %>% filter(sev == "UNBURN") %>% select(c(basin:year, flow, PER_0))
+      annual_change <- annual_change %>% filter(sev != "UNBURN") %>% select(-PER_0) %>% 
+        left_join(unburn, by=c("basin", "year", "flow")) %>% 
+        select(-year) 
+      annual_change <- annual_change %>%
+        mutate(n = annual_change[[ncol(annual_change)]], across(PER_10:PER_0, ~(.x - n)/n *100)) %>% 
+        select(-n) %>%  
+        pivot_longer(PER_10:PER_0, names_to = "scenario", values_to = "per_change") %>% 
+        group_by(basin, sev, scenario, flow) %>%
+        summarise(mean_change = mean(per_change))
+      
+      flow_paths <- annual_change %>% group_by(basin, sev, flow) %>%
+        filter(scenario != "PER_0") %>%
+        summarise(min = min(mean_change),
+                  max= max(mean_change))
+     
+      write.csv(flow_paths, file.path(data_save_path, "flowpath_perc_change.csv"), row.names=F)
+      
+      
+      
 #section 4: figure 3: nitrate load, concentration, and flashiness index ------ 
   #load annual reach summaries 
     data <- load_annual(data_save_path)
@@ -684,50 +718,5 @@
     plot_grid(p1, p2, ncol=1, labels = "auto", rel_heights =c(0.94, 1), label_size=30)
     dev.off()
     
-#section 7: figure A2: change in flow partitioning ------ 
-  #load data
-    df <- read.csv(file.path(data_save_path, "hru_summary_american.csv"))
-    df$basin <- "Humid, Forested Basin"
-    
-    df2 <- read.csv(file.path(data_save_path, "hru_summary_tule.csv"))
-    df2$basin <- "Semi-Arid, Mixed Land Use Basin"
-    
-    flow <- rbind(df, df2)
-    
-    flow <- flow[flow$year != 1987,] #remove the extra year
-    
-  #get average values for each scenario
-    flow <- flow %>% pivot_longer(SURQ:GWQ, names_to="path", values_to="amount") %>% 
-      mutate(PER = as.numeric(gsub("PER_", "", scenario))) %>% group_by(basin, path, sev, PER) %>% 
-      summarise(amount = mean(amount))
-    
-  #add unburned for other scenarios
-    unburn <- subset(flow,flow$sev == "UNBURN")
-    unburned <- do.call("rbind", replicate(3, unburn, simplify = FALSE))
-    unburned$sev <- c(rep("LOW", nrow(unburn)), rep("MOD", nrow(unburn)),rep("HIGH", nrow(unburn)))
-    flow <- rbind(flow, unburned) 
-    flow <- subset(flow, flow$sev != "UNBURN")
-    
-  #make factors 
-    flow$path <- factor(flow$path, levels=c("SURQ", "LATQ", "GWQ"),
-                        labels=c("Surface", "Lateral", "Groundwater"), 
-                        ordered=T)
-    flow$sev <- factor(flow$sev, levels=c("LOW", "MOD", "HIGH"), 
-                       labels=c("Low", "Moderate", "High"), ordered=T)
-    
-  #plot
-    p1 <-ggplot(flow, aes(x=PER, y=amount, fill=path)) + geom_bar(stat="identity") +
-      facet_grid(sev ~ basin) + 
-      scale_fill_manual(values=pnw_palette("Bay", n=3)) + 
-      labs(x="Area Burned (%)", y="Water Yield (mm)", 
-           fill="Flow Path") + theme_pub() + theme(legend.position = "bottom") + 
-      theme(strip.text = element_text(margin = ggplot2:::margin(t = 7, r = 7, b =7, l = 7),
-                                      size=14)) + 
-      
-      png(file.path(fig_save_path, "figA2-flow_paths.png"),
-          res=300, units="cm", width=20, height=20)
-      p1
-      dev.off()    
-    
-#section 8: table A2: best fit line fits and thresholds ------ 
+#section 7: table A2: best fit line fits and thresholds ------ 
   
