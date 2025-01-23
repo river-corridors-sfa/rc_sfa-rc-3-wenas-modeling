@@ -408,10 +408,10 @@
     annual_change <- data %>% select(any_of(c("basin", "year","sev", "real_per", metric))) %>% 
       pivot_wider(names_from=sev, values_from=!!sym(metric)) %>% 
       fill(UNBURN, .direction="up") %>% 
-      mutate(LOW = per_change(UNBURN, LOW), 
-             MOD = per_change(UNBURN, MOD),
-             HIGH = per_change(UNBURN, HIGH),
-             UNBURN = per_change(UNBURN, UNBURN)) %>% select(basin, year,real_per, LOW, MOD, HIGH, UNBURN) %>% 
+      mutate(LOW = change(UNBURN, LOW), 
+             MOD = change(UNBURN, MOD),
+             HIGH = change(UNBURN, HIGH),
+             UNBURN = change(UNBURN, UNBURN)) %>% select(basin, year,real_per, LOW, MOD, HIGH, UNBURN) %>% 
       pivot_longer(LOW:UNBURN, values_to = metric,  names_to = "sev") 
     
     #remove scenarios that don't make sense (0 percent burn but not burned, greater than 0 burn but unburned)
@@ -436,6 +436,49 @@
     
     return(annual_change)
   }
+  
+  #get absolute change from unburned for a metric 
+  abs_change <- function(data, metric){
+    #basic percent change function
+    change <- function(old, new){
+      abs <- new -old
+      return(abs)
+    } 
+    
+    annual_change <- data %>% select(any_of(c("basin", "year","sev", "real_per", metric))) %>% 
+      pivot_wider(names_from=sev, values_from=!!sym(metric)) %>% 
+      fill(UNBURN, .direction="up") %>% 
+      mutate(LOW = change(UNBURN, LOW), 
+             MOD = change(UNBURN, MOD),
+             HIGH = change(UNBURN, HIGH),
+             UNBURN = change(UNBURN, UNBURN)) %>% select(basin, year,real_per, LOW, MOD, HIGH, UNBURN) %>% 
+      pivot_longer(LOW:UNBURN, values_to = metric,  names_to = "sev") 
+    
+    #remove scenarios that don't make sense (0 percent burn but not burned, greater than 0 burn but unburned)
+    annual_change <- annual_change[!(annual_change$real_per == 0 & annual_change$sev != "UNBURN"),]
+    annual_change <- annual_change[!(annual_change$real_per > 0 & annual_change$sev== "UNBURN"),]
+    annual_change$sev <- factor(annual_change$sev, levels=c("UNBURN","LOW", "MOD", "HIGH"), ordered = T)
+    
+    annual_change <- annual_change %>% group_by(basin, sev, real_per) %>%
+      summarise(
+        q_0.05 = quantile(get(metric), 0.05),
+        q_0.25 = quantile(get(metric), 0.25),
+        q_0.5  = quantile(get(metric), 0.5),
+        q_0.75 = quantile(get(metric), 0.75),
+        q_0.95 = quantile(get(metric), 0.95),
+        mean = mean(get(metric)),
+        sd= sd(get(metric)),
+        max = max(get(metric)),
+        min = min(get(metric)))
+    
+    annual_sum <- annual_change %>% group_by(basin, sev) %>% 
+      summarise(min = min(mean),
+                max = max(mean))
+    write.csv(annual_sum, file.path(data_save_path, paste0(metric, "_perc_change.csv")), row.names=F)
+    
+    return(annual_change)
+  }
+  
   
 #section 1: figure 1: map of the two basins with landuse/dem --------
     #data for coloring landuse 
@@ -567,6 +610,37 @@
       flow_sum$unburn <- rep(flow_sum$min[c(1,5)], each=4)
       flow_sum <- flow_sum %>% mutate(min_dif = min-unburn, max_dif = max-unburn)
       
+      #calculate limits 
+      #get values (thresholds and points)
+      thresh_finder <- flow_plot %>% ungroup() %>% dplyr::select(basin, mean)
+
+      limits <- thresh_finder %>% group_by(basin) %>% summarise(min = min(mean),
+                                                                max = max(mean),
+                                                                median = median(mean)) %>% mutate(
+                                                                                                range = max- min,
+                                                                                                min_med = median -min,
+                                                                                                max_med = max-median,
+                                                                                                lower=NA, 
+                                                                                                upper=NA)
+      ceiling_dec <- function(x, level=1) round(x + 5*10^(-level-1), level)
+      
+      range <- ceiling_dec(max(limits$range)*1.5,0)
+      
+      #if max is futher from median start there, otherwise start from the bottom
+      for(x in 1:2){
+        if(limits$max_med[x] > limits$min_med[x]){
+          limits$upper[x] <- limits$max[x] * 1.01
+          limits$lower[x] <- limits$upper[x] - range
+          if(limits$lower[x] < 0){
+            limits$lower[x] <- 0
+            limits$upper[x] <- range
+          }
+        }else{
+          limits$lower[x] <- limits$min[x] * 0.95
+          limits$upper[x] <- limits$lower[x] + range 
+        }
+      }
+      
       #make plot
       p1 <- ggplot() + 
         geom_point(flow_plot, mapping=aes(x=real_per, y=mean, color=sev), size=4, alpha=0.9) +
@@ -574,7 +648,14 @@
         labs(x="Area Burned (%)", y=expression(bold(paste("Annual Water Yield (", mm, " ", yr^{-1}, ")"))), 
              color="Burn Severity") + theme_pub() +
         geom_line(best_fit, mapping=aes(x=real_per, y=fit_val, color=severity)) + 
-        facet_wrap(~basin, scale="free_y") 
+        facet_wrap(~basin, scale="free_y") +
+        facetted_pos_scales(
+          y = list(
+            basin == "Humid, Forested Basin" ~ scale_y_continuous(limits=c(limits$lower[1], limits$upper[1]),
+                                                                  breaks = seq(0, 2000, 20)), 
+            basin == "Semi-Arid, Mixed Land Use Basin" ~ scale_y_continuous(limits=c(limits$lower[2], limits$upper[2]),
+                                                                            breaks = seq(0, 2000, 20))))
+      
 
   #get runoff ratios 
       data$rr <- data$flow_mm_yr / data$precip_mm 
