@@ -1,0 +1,67 @@
+change,file,name,landuse,american,tule,description
+replace (v),.bsn,NPERCO,All,-9999,0.05,nitrate percolation coefficient
+replace (v),.bsn,SFTMP,All,-1.162075,1.021836,snowfall temperature (°C)
+replace (v),.bsn,SMFMN,All,1.755667,2.285585,Melt factor for snow on December 21 (mm H2O/°C-day)
+replace (v),.bsn,SMFMX,All,2.94277,0.881707,Melt factor for snow on June 21 (mm H2O/°C-day)
+replace (v),.bsn,TIMP,All,1.151632,0.669231,Snow pack temperature lag factor
+relative (r),.chm,SOL_NO3(),All,-9999,2,Initial NO3 concentration in the soil layer (mgN/kg soil or ppm)
+replace (v),.chm,SOL_ORGN(),All,500,225,Initial organic N concentration in the soil layer (mgN/kg soil or ppm)
+replace (v),.gw,ALPHA_BF,All,0.099285,0.067363,Baseflow alpha factor (1/days)
+replace (v),.gw,GW_DELAY,All,307.268097,105.034584,Groundwater delay time (days)
+replace (v),.gw,GWSOLP,All,0.3,0.3,DOC concentration in baseflow (borrowed parameter for DOC module)
+replace (v),.gw,RCHRG_DP,All,0.438913,0.283728,Deep aquifer percolation fraction
+replace (v),.hru,DEP_IMP,All,2000,1000,Organic carbon partition coefficient for DOC production (borrowed parameter for DOC module)
+replace (v),.hru,EPCO,All,0.817239,0.660676,Plant uptake compensation factor
+replace (v),.hru,ERORGN,All,0.1,0.3,DOC peroclation coefficient in surface runoff (borrowed parameter for DOC module)
+replace (v),.hru,ESCO,All,0.995292,0.89363,Soil evaporation compensation factor
+relative (r),.hru,HRU_SLP,All,0.56104,-0.803898,Average slope steepness (m/m)
+relative (r),.hru,SLSUBBSN,All,0.528565,0.636488,Average slope length (m)
+replace (v),.mgt,BIO_INIT,FRSD,-9999,30644.16797,Initial dry weight biomass (kg/ha)
+replace (v),.mgt,BIO_INIT,FRSE,11911.30762,7905.3125,Initial dry weight biomass (kg/ha)
+replace (v),.mgt,BIO_INIT,RNGB,4513.171387,2869.579834,Initial dry weight biomass (kg/ha)
+replace (v),.mgt,BIO_INIT,RNGE,-9999,3957.624512,Initial dry weight biomass (kg/ha)
+relative (r),.mgt,CN2,All,-0.38258,-0.439455,Initial SCS runoff curve number for moisture condition II
+replace (v),.plant,ALAI_MIN,FRSD,-9999,0.288181,Minimum leaf area index for plant during dormant period (m2/m2)
+replace (v),.plant,ALAI_MIN,FRSE,0.22502,0.495489,Minimum leaf area index for plant during dormant period (m2/m2)
+replace (v),.plant,ALAI_MIN,RNGB,0.231138,0.279831,Minimum leaf area index for plant during dormant period (m2/m2)
+replace (v),.plant,ALAI_MIN,RNGE,-9999,0.080253,Minimum leaf area index for plant during dormant period (m2/m2)
+replace (v),.plant,BIO_E,FRSD,-9999,15.97674,Radiation-use efficiency or biomass-energy ratio ((kg/ha)/MJ/m2))
+replace (v),.plant,BIO_E,FRSE,26.102331,13.56428,Radiation-use efficiency or biomass-energy ratio ((kg/ha)/MJ/m2))
+replace (v),.plant,BIO_E,RNGB,33.150085,36.182533,Radiation-use efficiency or biomass-energy ratio ((kg/ha)/MJ/m2))
+replace (v),.plant,BIO_E,RNGE,-9999,28.809143,Radiation-use efficiency or biomass-energy ratio ((kg/ha)/MJ/m2))
+replace (v),.plant,BIO_LEAF,FRSD,-9999,0.745759,Fraction of tree biomass accumulated each years that is converted to residue during dormancy
+replace (v),.plant,BIO_LEAF,FRSE,0.041224,0.056204,Fraction of tree biomass accumulated each years that is converted to residue during dormancy
+replace (v),.plant,BLAI,FRSD,-9999,4.308355,Maximum potential leaf area index
+replace (v),.plant,BLAI,FRSE,3.97324,4.592654,Maximum potential leaf area index
+replace (v),.plant,BLAI,RNGB,2.120652,2.476754,Maximum potential leaf area index
+replace (v),.plant,BLAI,RNGE,-9999,1.947813,Maximum potential leaf area index
+replace (v),.plant,DLAI,FRSD,-9999,0.098195,Fraction of growing season when leaf area begins to decline
+replace (v),.plant,DLAI,FRSE,0.05755,0.237512,Fraction of growing season when leaf area begins to decline
+replace (v),.plant,DLAI,RNGB,0.063713,0.335022,Fraction of growing season when leaf area begins to decline
+replace (v),.plant,DLAI,RNGE,-9999,0.362522,Fraction of growing season when leaf area begins to decline
+replace (v),.plant,FRGRW1,FRSD,-9999,0.182386,Fraction of the plant growing season or fraction of total potential heat units corresponding to the 1st point on the optimal leaf area development curve
+replace (v),.plant,FRGRW1,FRSE,0.094906,0.234142,Fraction of the plant growing season or fraction of total potential heat units corresponding to the 1st point on the optimal leaf area development curve
+replace (v),.plant,FRGRW1,RNGB,0.073245,0.140996,Fraction of the plant growing season or fraction of total potential heat units corresponding to the 1st point on the optimal leaf area development curve
+replace (v),.plant,FRGRW1,RNGE,-9999,0.15897,Fraction of the plant growing season or fraction of total potential heat units corresponding to the 1st point on the optimal leaf area development curve
+replace (v),.plant,FRGRW2,FRSD,-9999,0.879965,Fraction of the plant growing season or fraction of total potential heat units corresponding to the 2nd point on the optimal leaf area development curve
+replace (v),.plant,FRGRW2,FRSE,0.669895,0.866221,Fraction of the plant growing season or fraction of total potential heat units corresponding to the 2nd point on the optimal leaf area development curve
+replace (v),.plant,FRGRW2,RNGB,0.788557,0.946369,Fraction of the plant growing season or fraction of total potential heat units corresponding to the 2nd point on the optimal leaf area development curve
+replace (v),.plant,FRGRW2,RNGE,-9999,0.532641,Fraction of the plant growing season or fraction of total potential heat units corresponding to the 2nd point on the optimal leaf area development curve
+replace (v),.plant,LAIMX1,FRSD,-9999,0.240761,Fraction of the maximum leaf are index corresponding to the 1st point on the optimal leaf area development curve
+replace (v),.plant,LAIMX1,FRSE,0.209339,0.241371,Fraction of the maximum leaf are index corresponding to the 1st point on the optimal leaf area development curve
+replace (v),.plant,LAIMX1,RNGB,0.306569,0.289126,Fraction of the maximum leaf are index corresponding to the 1st point on the optimal leaf area development curve
+replace (v),.plant,LAIMX1,RNGE,-9999,0.306813,Fraction of the maximum leaf are index corresponding to the 1st point on the optimal leaf area development curve
+replace (v),.plant,LAIMX2,FRSD,-9999,0.568426,Fraction of the maximum leaf are index corresponding to the 2nd point on the optimal leaf area development curve
+replace (v),.plant,LAIMX2,FRSE,0.571643,0.879488,Fraction of the maximum leaf are index corresponding to the 2nd point on the optimal leaf area development curve
+replace (v),.plant,LAIMX2,RNGB,0.620246,0.802379,Fraction of the maximum leaf are index corresponding to the 2nd point on the optimal leaf area development curve
+replace (v),.plant,LAIMX2,RNGE,-9999,0.78595,Fraction of the maximum leaf are index corresponding to the 2nd point on the optimal leaf area development curve
+replace (v),.plant,T_BASE,FRSD,-9999,4.32703,Minimum (base) temperature for plant growth (°C)
+replace (v),.plant,T_BASE,FRSE,3.332426,2.338313,Minimum (base) temperature for plant growth (°C)
+replace (v),.plant,T_BASE,RNGB,2.593639,4.00003,Minimum (base) temperature for plant growth (°C)
+replace (v),.plant,T_BASE,RNGE,-9999,5.249556,Minimum (base) temperature for plant growth (°C)
+replace (v),.plant,T_OPT,FRSD,-9999,25.964085,Optimal temperature for plant growth (°C)
+replace (v),.plant,T_OPT,FRSE,25.715307,37.066895,Optimal temperature for plant growth (°C)
+replace (v),.plant,T_OPT,RNGB,7.604404,22.480682,Optimal temperature for plant growth (°C)
+replace (v),.plant,T_OPT,RNGE,-9999,23.633015,Optimal temperature for plant growth (°C)
+replace (v),.rte,CH_K2,All,53.436054,43.188293,Effective hydraulic conductivity in main channel alluvium (mm/hr)
+replace (v),.rte,CH_N2,All,0.242703,0.204145,"Manning's ""n"" value for the main channel"

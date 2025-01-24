@@ -678,8 +678,8 @@
       flow <- rbind(df, df2)
       flow <- flow[flow$year != 1987,] #remove the extra year
       
-      annual_change <- flow %>% select(any_of(c("basin", "year","sev", "scenario", "SURQ", "LATQ", "GWQ"))) %>% 
-        pivot_longer(SURQ:GWQ, names_to = "flow", values_to="value_mm") %>%
+      annual_change <- flow %>% select(any_of(c("basin", "year","sev", "scenario", "SURQ", "LATQ", "GWQ", "PRECIP"))) %>% 
+        pivot_longer(c(SURQ:GWQ, PRECIP), names_to = "flow", values_to="value_mm") %>%
         pivot_wider(names_from=scenario, values_from=value_mm)
         
       unburn <- annual_change %>% filter(sev == "UNBURN") %>% select(c(basin:year, flow, PER_0))
@@ -898,3 +898,36 @@
    df$sev[df$sev == "HIGH"] <- "High"
 
    readr::write_excel_csv(df, file.path(data_save_path, "tablea2-theshold_fits.csv"))
+
+#section 8: create table of calibration parameters (for data package)--------
+  #load calibration parameters
+   american <- "C:/SWAT/American River Simp2/American River Simp2/Scenarios/american river simp2.Sufi2.SwatCup"
+   american_it <- "1-6-best-cal2-daily" #iteration file with calibrated parameters
+   american_pars <- read_table(file.path(american, "iterations", american_it, "Sufi2.in/par_inf.txt"),col_names=F, skip=2)
+   
+   tule <- "C:/SWAT/Tule River Simp2/Tule River Simp2/Scenarios/tule river simp2.Sufi2.SwatCup"
+   tule_it <- "1-17-best-cal-daily"
+   tule_pars <- read_table(file.path(tule, "iterations", tule_it, "Sufi2.in/par_inf.txt"),col_names=F, skip=2)
+   
+  #tidy and combines 
+    pars <- american_pars %>% select(-X3) %>% rename(parm = X1, american=X2) %>% 
+      full_join(tule_pars %>% select(-X3) %>% rename(parm = X1, tule=X2), by="parm") 
+    
+    pars$change <- str_split_i(pars$parm, "__", i=1) #get type of change
+    pars$name <- str_split_i(pars$parm, "__|[.]", i=2) #get parameter name
+    pars$file <- paste0(".", str_split_i(pars$parm, "__|[.]", i=3)) #get file location
+    pars$landuse <- str_split_i(pars$name, "[{]|[}]", i=2) #get landuse
+    pars$name <- str_split_i(pars$name, "[{]|[}]", i=1) #get name without landuse
+    
+  #rename values for clarity
+    change_table <- data.frame(change=c("r", "v", "a"), nice =c("relative (r)", "replace (v)", "absolute (a)"))
+    landuse_table <- data.frame(landuse=c(7,8,15,16), nice=c("FRSD", "FRSE", "RNGE", "RNGB") )
+
+    pars$change <- change_table$nice[match(pars$change, change_table$change)]    
+    pars$landuse <- landuse_table$nice[match(pars$landuse, landuse_table$landuse)]
+    pars$landuse[is.na(pars$landuse)] <- "All"
+  
+  #rearrange and sort 
+    pars <- pars %>% select(change, file, name, landuse, american, tule)
+    pars <- pars[order(c(pars$name, pars$landuse, pars$name)),]
+    
