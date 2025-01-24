@@ -1,7 +1,7 @@
-"metric","basin","sev","thresh"
-"Average Nitrate Concentration (mg L⁻¹)","Humid, Forested Basin","LOW",NA
-"Average Nitrate Concentration (mg L⁻¹)","Humid, Forested Basin","MOD",NA
-"Average Nitrate Concentration (mg L⁻¹)","Humid, Forested Basin","HIGH",70.3
-"Average Nitrate Concentration (mg L⁻¹)","Semi-Arid, Mixed Land Use Basin","LOW",66.2
-"Average Nitrate Concentration (mg L⁻¹)","Semi-Arid, Mixed Land Use Basin","MOD",52.3
-"Average Nitrate Concentration (mg L⁻¹)","Semi-Arid, Mixed Land Use Basin","HIGH",43.7
+"basin","sev","model","r2","F_stat","p_val","int","c1","c2","c3","thresh"
+"Humid, Forested Basin","LOW","x2+x3",0.170331892557322,1.84771117422013,0.66878198977555,0.0841730179034419,-5.74277183703569e-07,5.8157349969231e-09,NA,NA
+"Humid, Forested Basin","MOD","x2+x3",0.56604023336277,11.7392497920748,0.148248014772657,0.0839362006935139,-1.59932968573846e-06,1.59493589472286e-08,NA,NA
+"Humid, Forested Basin","HIGH","x4",0.958233171841722,435.906461366855,1.45585403436383e-14,0.0835948707663719,1.10490474853199e-10,NA,NA,70.3
+"Semi-Arid, Mixed Land Use Basin","LOW","x3",0.927322303721999,242.428209382457,2.85062183877858e-12,0.0479292640106028,1.16018151550597e-08,NA,NA,66.2
+"Semi-Arid, Mixed Land Use Basin","MOD","x2+x3",0.962715125215973,232.384745211904,2.64285746948199e-14,0.0478964409757697,1.1322473908255e-06,2.17745818062885e-09,NA,52.3
+"Semi-Arid, Mixed Land Use Basin","HIGH","x2+x3",0.993155925024142,1306.00605001359,6.82351110025926e-21,0.0473867188608822,2.5000389686314e-06,-1.0305327028992e-08,NA,43.7

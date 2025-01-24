@@ -70,7 +70,7 @@
     mods <- c("linear","x3","x+x2", "exp(x)", "x2+x3","x4", "cubic")
     int <- summary(models[[best]])$coefficients[1,1]
     coeff1 <- summary(models[[best]])$coefficients[2,1]
-    if(nrow(summary(models[[best]])$coefficients)==3){
+    if(nrow(summary(models[[best]])$coefficients)>=3){
       coeff2 <- summary(models[[best]])$coefficients[3,1]
     }else{coeff2 <- NA}
     if(nrow(summary(models[[best]])$coefficients)==4){
@@ -90,7 +90,9 @@
     
     per_thresh <- thresh_data$real_per[min(which(thresh_data$fit_val > as.numeric(threshold)))]
     
-    return(list(c(basin, severity, mods[best], r2, F_stat, p_val, int, coeff1, coeff2, coeff3), predictions, per_thresh))}
+    return(list(data.frame(basin=basin, sev=severity, model=mods[best], r2=r2, 
+                           F_stat=F_stat, p_val=p_val, int=int, c1=coeff1, 
+                           c2=coeff2, c3=coeff3), predictions, per_thresh))}
 
   #automates making threshold plots, making the limits for the two basins the same, and determining the thresholds
   threshold_plot <- function(data, metric, label, legend.pos=NULL){
@@ -127,11 +129,6 @@
       q_0.5  = quantile(means, 0.5),
       q_0.95 = quantile(means, 0.95)) 
     
-    #thresh <-  thresh %>% group_by(basin) %>% summarise(
-    #  q_0.05 = quantile(get(metric), 0.05),
-    #q_0.5  = quantile(get(metric), 0.5),
-    # q_0.95 = quantile(get(metric), 0.95))      
-    
     #determine best fit lines 
     for(y in unique(data$basin)){
       for(x in c("LOW", "MOD", "HIGH")){
@@ -139,15 +136,17 @@
                                             thresh[thresh$basin==y,4]))
         
         if(x == "LOW" & y == unique(data$basin)[1]){
+          fits <- output[[1]]
           best_fit <- output[[2]]
           thresh_cross <- output[[3]]
         }else{
+          fits <- rbind(fits, output[[1]])
           best_fit <- rbind(best_fit, output[[2]])
           thresh_cross <- c(thresh_cross,output[[3]])
         }}} 
     
-    thresh_cross <- data.frame( metric=label, basin=rep(unique(data$basin), each=3), sev=rep(c("LOW", "MOD", "HIGH"), 2), thresh=thresh_cross)
-    write.csv(thresh_cross, file.path(data_save_path,paste0("thresholds_", metric, ".csv")), row.names=F)
+    fits$thresh <- thresh_cross
+    write.csv(fits, file.path(data_save_path,paste0("thresholds_", metric, ".csv")), row.names=F)
     
     #calculate limits 
     #get values (thresholds and points)
@@ -800,4 +799,102 @@
     dev.off()
     
 #section 7: table A2: best fit line fits and thresholds ------ 
+  #pull all individual threshold files and clean/organize 
+    files <- list.files(data_save_path, pattern="threshold")  
   
+    for(x in files){
+      df <- read.csv(file.path(data_save_path, x))
+      metric <- gsub(".csv", "", gsub("thresholds_", "", x))
+      df$metric <- metric
+      if(x == files[1]){
+        thresholds <- df
+      }else{
+        thresholds <- rbind(thresholds, df)
+      }} 
+    
+    #make equations look nice
+    changeSciNot <- function(n) {
+      if(is.na(n) == T){
+        output <- NA
+      }else if(n < 1000 & n > 0.1){
+        output <- signif(n, 2)
+      }else{
+        unicode <- data.frame(num = as.character(1:11),
+                              uni = c("\U00B9","\U00B2", "\U00B3","\U2074","\U2075",
+                                      "\U2076", "\U2077", "\U2078", "\U2079", "\U00B9\U00B9", 
+                                      "\U00B9\U2070"))
+        output <- format(n, scientific = TRUE) #Transforms the number into scientific notation even if small
+        output <- sub("e", "x10^", output) #Replace e with 10^
+        sub <- str_split_i(output, "[/^]", i=2)
+        start <- str_split_i(output, "[/^]", i=1)
+        
+       
+        #convert supercript to unicode 
+        sub<- sub("\\+0?", "", sub) #Remove + symbol and leading zeros on exponent, if > 1
+        sub <- sub("-0?", "-", sub) #Leaves - symbol but removes leading zeros on exponent, if < 1
+        
+        exp <- sub("-", "",sub)
+        exp <-  unicode$uni[unicode$num == exp]
+        sub <- paste0("\U207B", exp)
+        output <- paste0(start,sub)
+      }
+      
+      output
+    }
+    convert_sci <- function(col){
+      sapply(col, changeSciNot)
+        
+    }
+    
+    #create best fit lines from coefficients
+    write_equation <- function(model, int, c1, c2,c3){
+      if(model == "cubic"){
+        eq <- paste0(int, " + ", c1, "P", " + ", c2, "P\U00B2", " + ", c3,"P\U00B3")
+      }else if(model == "x+x2"){
+        eq <- paste0(int, " + ", c1, "P", " + ", c2,"P\U00B2")
+      }else if(model == "x2+x3"){
+        eq <- paste0(int, " + ", c1, "P\U00B2", " + ", c2,"P\U00B3")
+      }else if(model == "x4"){
+        eq <- paste0(int, " + ", c1, "P\U2074")
+      }else if(model == "x3"){
+        eq <- paste0(int, " + ", c1, "P\U00B3")
+      }else if(model == "linear"){
+        eq <- paste0(int, " + ", c1, "P")
+      }}
+    
+  #clean the table so it's closer to the right formatting for paper 
+   df <- thresholds %>% select(metric, basin, sev, thresh, model, 
+                               int, c1,c2,c3,r2,F_stat, p_val) %>% 
+     mutate_at(vars(int:c3), ~ signif(.,2)) %>% 
+     mutate_at(vars(r2, p_val), ~ signif(.,3)) %>% 
+     mutate_at(vars(F_stat), ~ signif(.,3)) %>%
+     mutate_at(vars(int:c3), ~ convert_sci(.))
+   
+   df$p_val[df$p_val < 0.001] <- "p < 0.001"
+   df$basin <- gsub(",", ";", df$basin)
+   df$thresh[is.na(df$thresh)] <- "-"
+   
+   df$equation <- NA
+   for(x in 1:nrow(df)){
+     df$equation[x] <- write_equation(df$model[x], df$int[x], df$c1[x], df$c2[x], df$c3[x])
+   }
+   
+   df <- df %>% select(metric, basin, sev, thresh, equation,r2,F_stat, p_val)
+  
+   #make metric names nicer 
+   df$metric <-   factor(df$metric, levels=c("rr", "avg_nitrate_mgL","nitrate_kg_yr","nitrate_rb",
+                              "avg_doc_mgL","doc_kg_yr","doc_rb"), 
+                      labels=c("Runoff Ratio",
+                               "Average Nitrate Concentration",
+                               "Annual Nitrate Load (10\u2074)",
+                               "Nitrate Richard Baker Flashiness Index", 
+                               "Average DOC Concentration",
+                               "Annual DOC Load (10\u2074)",
+                               "DOC Richard Baker Flashiness Index"), ordered = T)
+   df <- df[order(df$metric),]
+   
+   df$sev[df$sev == "LOW"] <- "Low"
+   df$sev[df$sev == "MOD"] <-  "Moderate"
+   df$sev[df$sev == "HIGH"] <- "High"
+
+   readr::write_excel_csv(df, file.path(data_save_path, "tablea2-theshold_fits.csv"))
