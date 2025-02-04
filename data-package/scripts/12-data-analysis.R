@@ -473,7 +473,7 @@
     annual_sum <- annual_change %>% group_by(basin, sev) %>% 
       summarise(min = min(mean),
                 max = max(mean))
-    write.csv(annual_sum, file.path(data_save_path, paste0(metric, "_perc_change.csv")), row.names=F)
+    write.csv(annual_sum, file.path(data_save_path, paste0(metric, "_abs_change.csv")), row.names=F)
     
     return(annual_change)
   }
@@ -656,6 +656,10 @@
                                                                             breaks = seq(0, 2000, 20))))
       
 
+  #get change in annual yields (absolute)
+      flow_change <- abs_change(data, "flow_mm_yr") %>% select("basin", "sev", "real_per", "mean")
+      flow_change <- perc_change(data, "flow_mm_yr")
+      
   #get runoff ratios 
       data$rr <- data$flow_mm_yr / data$precip_mm 
       p2 <- threshold_plot(data, "rr", "Annual Runoff Ratio")
@@ -665,11 +669,10 @@
           res=300, units="cm", width=30, height=30)
       ggpubr::ggarrange(p1,p2, ncol=1,  common.legend = TRUE, legend="bottom",
                         labels="auto", font.label = list(size=30))
-      dev.off()    
+      dev.off()   
       
-      
-  #get change in flowpaths 
-      #load data
+#section 4: figure 3: relative change in flow paths -------
+    #load data
       df <- read.csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "hru_summary_american.csv"))
       df$basin <- "Humid, Forested Basin"
       
@@ -678,31 +681,69 @@
       flow <- rbind(df, df2)
       flow <- flow[flow$year != 1987,] #remove the extra year
       
-      annual_change <- flow %>% select(any_of(c("basin", "year","sev", "scenario", "SURQ", "LATQ", "GWQ", "PRECIP"))) %>% 
-        pivot_longer(c(SURQ:GWQ, PRECIP), names_to = "flow", values_to="value_mm") %>%
-        pivot_wider(names_from=scenario, values_from=value_mm)
+      #merge to get total flow 
+      data <- load_annual(data_save_path)
+      data$scenario[data$sev == "UNBURN"] <- "PER_0"
+      
+      flow <- flow %>% left_join(data, by=c("basin", "year", "sev", "scenario"))
+      
+      flow$DGWQ <- flow$flow_mm_yr - flow$SURQ -flow$LATQ - flow$GWQ #get deep groundwater flow 
+      
+      #get average values for each scenario for plotting
+      plot_data <- flow %>% mutate(across(c(SURQ:GWQ, DGWQ), ~.x/flow_mm_yr*100)) %>% 
+        pivot_longer(c(SURQ:GWQ, DGWQ), names_to="path", values_to="amount") %>% 
+        mutate(PER = as.numeric(gsub("PER_", "", scenario))) %>% group_by(basin, path, sev, PER) %>% 
+        summarise(amount = mean(amount))
+      
+      #add unburned for other scenarios
+      unburn <- subset(plot_data,plot_data$sev == "UNBURN")
+      unburned <- do.call("rbind", replicate(3, unburn, simplify = FALSE))
+      unburned$sev <- c(rep("LOW", nrow(unburn)), rep("MOD", nrow(unburn)),rep("HIGH", nrow(unburn)))
+      plot_data <- rbind(plot_data, unburned) 
+      plot_data <- subset(plot_data, plot_data$sev != "UNBURN")
+      
+      #make factors 
+      plot_data$path <- factor(plot_data$path, levels=c("SURQ", "LATQ", "GWQ", "DGWQ"),
+                          labels=c("Surface", "Lateral", "Shallow Groundwater", "Deep Groundwater"), 
+                          ordered=T)
+      plot_data$sev <- factor(plot_data$sev, levels=c("LOW", "MOD", "HIGH"), 
+                         labels=c("Low", "Moderate", "High"), ordered=T)
+      
+      #plot
+      p1 <-  ggplot(plot_data, aes(x=PER, y=amount, fill=path)) + geom_bar(stat="identity") +
+        facet_grid(sev ~ basin) + 
+        scale_fill_manual(values=rev(pnw_palette("Bay", n=4))) + 
+        labs(x="Area Burned (%)", y="Water Yield (%)", 
+             fill="Flow Path") + theme_pub() + 
+        theme(legend.position = "bottom") + 
+        theme(axis.title = element_text(size=18)) + 
+        theme(strip.background = element_rect(fill="gray70")) +
+        theme(strip.text = element_text(margin = ggplot2:::margin(t = 7, r = 7, b =7, l = 7),
+                                        size=14)) +guides(fill=guide_legend(nrow=2))
+      
+      png(paste0(fig_save_path, "/fig3-flow_paths.png"),
+          res=300, units="cm", width=20, height=20)
+      p1      
+      dev.off()  
+      
+      #get percentage of flow for each
+      paths <- plot_data %>% pivot_wider(names_from = "PER", names_prefix = "PER_",
+                                         values_from = "amount")
+      unburn <- paths %>% ungroup() %>% select(c(basin, path, PER_0)) %>% unique()
+      annual_change <- paths %>% select(-PER_0) %>% 
+        left_join(unburn, by=c("basin", "path"))  %>%
+        mutate(across(PER_5:PER_0, ~(.x - PER_0))) %>% 
+        pivot_longer(PER_10:PER_0, names_to = "scenario", values_to = "change")
         
-      unburn <- annual_change %>% filter(sev == "UNBURN") %>% select(c(basin:year, flow, PER_0))
-      annual_change <- annual_change %>% filter(sev != "UNBURN") %>% select(-PER_0) %>% 
-        left_join(unburn, by=c("basin", "year", "flow")) %>% 
-        select(-year) 
-      annual_change <- annual_change %>%
-        mutate(n = annual_change[[ncol(annual_change)]], across(PER_10:PER_0, ~(.x - n)/n *100)) %>% 
-        select(-n) %>%  
-        pivot_longer(PER_10:PER_0, names_to = "scenario", values_to = "per_change") %>% 
-        group_by(basin, sev, scenario, flow) %>%
-        summarise(mean_change = mean(per_change))
-      
-      flow_paths <- annual_change %>% group_by(basin, sev, flow) %>%
+      flow_paths <- annual_change %>% group_by(basin, sev, path) %>%
         filter(scenario != "PER_0") %>%
-        summarise(min = min(mean_change),
-                  max= max(mean_change))
+        summarise(min = min(change),
+                  max= max(change)) %>% pivot_wider(names_from=sev,values_from=c(min, max))
      
-      write.csv(flow_paths, file.path(data_save_path, "flowpath_perc_change.csv"), row.names=F)
+      write.csv(flow_paths, file.path(data_save_path, "flowpath_change.csv"), row.names=F)
       
       
-      
-#section 4: figure 3: nitrate load, concentration, and flashiness index ------ 
+#section 5: figure 4: nitrate load and concentration ------ 
   #load annual reach summaries 
     data <- load_annual(data_save_path)
   
@@ -712,21 +753,18 @@
     
   #get concentration
     p2 <- threshold_plot(data, "avg_nitrate_mgL", "Average Nitrate Concentration (mg L\u207B\u00B9)")  
-    
-  #get nitrate rb index for concentrations 
-    p3 <- threshold_plot(data, "nitrate_rb", "Richard Baker Flashiness Index") 
-    
+  
   #combine and save 
-    png(file.path(fig_save_path, "fig3-nitrate_load_con_rb.png"),
-        res=300, units="cm", width=30, height=45)
-    ggpubr::ggarrange(p2,p1,p3, ncol=1,  common.legend = TRUE, legend="bottom",
+    png(file.path(fig_save_path, "fig4-nitrate_load_con.png"),
+        res=300, units="cm", width=30, height=30)
+    ggpubr::ggarrange(p2,p1, ncol=1,  common.legend = TRUE, legend="bottom",
                       labels="auto", font.label = list(size=30))
     dev.off() 
 
   #get perc change in concentration for results 
     nitrate_change <- perc_change(data, "avg_nitrate_mgL")
     
-#section 5: figure 4: doc load, concentration, and flashiness index ------- 
+#section 6: figure 5: doc load and concentration ------- 
   #load annual reach summaries 
     data <- load_annual(data_save_path)
     
@@ -737,20 +775,17 @@
   #get average concentraiton 
     p2 <- threshold_plot(data, "avg_doc_mgL", "Average DOC Concentration (mg L\u207B\u00B9)") 
     
-  #get doc rb index for concentrations 
-    p3 <- threshold_plot(data, "doc_rb", "Richard Baker Flashiness Index") 
-    
     #combine and save 
-    png(file.path(fig_save_path, "fig4-doc_load_con_rb.png"),
-        res=300, units="cm", width=30, height=45)
-    ggpubr::ggarrange(p2,p1,p3, ncol=1,  common.legend = TRUE, legend="bottom",
+    png(file.path(fig_save_path, "fig5-doc_load_con.png"),
+        res=300, units="cm", width=30, height=30)
+    ggpubr::ggarrange(p2,p1, ncol=1,  common.legend = TRUE, legend="bottom",
                       labels="auto", font.label = list(size=30))
     dev.off() 
     
   #get perc change in concentration for results 
     doc_change <- perc_change(data, "avg_doc_mgL")
     
-#section 6: figure A1: wildfire scenarios ------ 
+#section 7: figure A1: wildfire scenarios ------ 
   #plot american 
     savewd <- "~/1_Research/4_Wenas_Thresholds/data/American River/wild_fire files"
     modelwd <- "C:/SWAT/American River Simp2/American River Simp2/"
@@ -798,7 +833,7 @@
     plot_grid(p1, p2, ncol=1, labels = "auto", rel_heights =c(0.94, 1), label_size=30)
     dev.off()
     
-#section 7: table A2: best fit line fits and thresholds ------ 
+#section 8: table A2: best fit line fits and thresholds ------ 
   #pull all individual threshold files and clean/organize 
     files <- list.files(data_save_path, pattern="threshold")  
   
@@ -899,7 +934,7 @@
 
    readr::write_excel_csv(df, file.path(data_save_path, "tablea2-theshold_fits.csv"))
 
-#section 8: create table of calibration parameters (for data package)--------
+#section 9: create table of calibration parameters (for data package)--------
   #load calibration parameters
    american <- "C:/SWAT/American River Simp2/American River Simp2/Scenarios/american river simp2.Sufi2.SwatCup"
    american_it <- "1-6-best-cal2-daily" #iteration file with calibrated parameters
@@ -929,5 +964,8 @@
   
   #rearrange and sort 
     pars <- pars %>% select(change, file, name, landuse, american, tule)
-    pars <- pars[order(c(pars$name, pars$landuse, pars$name)),]
+    pars <- pars[order(pars$file, pars$landuse, pars$name),]
+    
+  #save for some manual manipulation 
+    write.csv(pars, file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/inputs", "calibration-parameters.csv"), quote=F, row.names=F)
     

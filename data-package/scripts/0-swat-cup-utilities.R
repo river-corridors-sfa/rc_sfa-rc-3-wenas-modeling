@@ -121,3 +121,41 @@
   write.table(paste(line1, line2, "", sep="\n"), paste(dir, "Sufi2.in/par_inf.txt", sep=""), quote=F, row.names = F, col.names = F)    
   write.table(best_par, paste(dir, "Sufi2.in/par_inf.txt", sep=""), append=T, quote=F, row.names = F, col.names = F, sep="\t")    
 
+
+#function 5: extract aridity based on lat and long or bounding box (for discussion)------
+  library(sf)
+  library(raster)
+  
+  #aridity data from here: https://www-nature-com.oregonstate.idm.oclc.org/articles/s41597-022-01493-1
+  aridity <-  raster("Z:/3_GIS-GPS/Random Forest Datasets/ai_et0/ai_et0.tif")
+
+  #checked and it is pulling where I think/expect it to
+  #  min LONG, max LONG, min LAT, max LAT
+  bb_box <- c(-84.3, -82.9, 35.0, 35.4)
+  point <- c(-84.3, 35.0) #long, lat
+  
+  #can use this to get bbox: http://bboxfinder.com/#0.000000,0.000000,0.000000,0.000000 
+  
+  get_aridity <- function(dataset, bb_box=NULL, point=NULL){
+    if(is.null(bb_box) == F){
+      e <- extent(bb_box)
+      area <- crop(dataset, e)
+      val <- getValues(area) #get raster values
+      m <- mean(val,na.rm=T) #remove NAs and compute mean
+      m <- m /10000 #convert back to aridity index
+         
+      } 
+    
+    if(is.null(point) == F){
+      p <- SpatialPoints(matrix(point, nrow=1), proj4string = crs(dataset))
+      val <-extract(dataset, p, sp = T ) #get raster value
+      m <- val$ai_et0 /10000 #convert back to aridity index
+      
+    }
+    
+    return(m)
+  }
+
+  get_aridity(aridity, bb_box=c(-120.285210,-120.134462,34.473902,34.552536)) 
+  get_aridity(aridity, point=c(-115.76444020831659,45.09075111989275)) 
+  
