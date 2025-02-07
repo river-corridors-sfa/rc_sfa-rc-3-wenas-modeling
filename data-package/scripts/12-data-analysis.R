@@ -2,7 +2,7 @@
   #written by Katie A. Wampler on 10-25-2024 
 
   fig_save_path <-  "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/figures"
-  data_save_path <-  "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/tables"
+  data_save_path <-  "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/summary-outputs"
 
 #section 0: load libraries and functions -------
   library(tools)
@@ -712,7 +712,7 @@
       #plot
       p1 <-  ggplot(plot_data, aes(x=PER, y=amount, fill=path)) + geom_bar(stat="identity") +
         facet_grid(sev ~ basin) + 
-        scale_fill_manual(values=rev(pnw_palette("Bay", n=4))) + 
+        scale_fill_manual(values=rev(pnw_palette("Cascades", n=4))) + 
         labs(x="Area Burned (%)", y="Water Yield (%)", 
              fill="Flow Path") + theme_pub() + 
         theme(legend.position = "bottom") + 
@@ -833,6 +833,47 @@
     plot_grid(p1, p2, ncol=1, labels = "auto", rel_heights =c(0.94, 1), label_size=30)
     dev.off()
     
+#section 8: figure A2: Change in ET for each scenario ------ 
+    #load data
+    area <- 206.834425 #km2
+    annuals_a <- read.csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "hru_summary_american.csv"))
+    annuals_a$perc <- ifelse(annuals_a$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_a$scenario, "_", i=2)))
+    annuals_a$sev <- factor(annuals_a$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
+    
+    #load burn scenarios 
+    hru_burn <- read.csv("~/1_Research/4_Wenas_Thresholds/data/American River/wild_fire files/hru_burn_scenarios.csv")
+    hru_burn <- subset(hru_burn, hru_burn$sev == "burned")
+    
+    burn_scenarios <- hru_burn %>% group_by(scenario) %>% summarise(area_ha = sum(area_ha)) %>% mutate(real_per = area_ha / (area *100)*100 )
+    
+    annuals_a <- annuals_a %>% left_join(burn_scenarios, by=c("perc" = "scenario")) 
+    annuals_a$real_per[annuals_a$perc == 0] <- 0
+    annuals_a$basin <- "Humid, Forested Basin" 
+    
+    
+    area <- 249.9807#km2
+    annuals_t <- read.csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "hru_summary_tule.csv"))
+    annuals_t$perc <- ifelse(annuals_t$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_t$scenario, "_", i=2)))
+    annuals_t$sev <- factor(annuals_t$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
+    
+    #load burn scenarios 
+    hru_burn <- read.csv("~/1_Research/4_Wenas_Thresholds/data/tule_River/wild_fire files/hru_burn_scenarios.csv")
+    hru_burn <- subset(hru_burn, hru_burn$sev == "burned")
+    
+    burn_scenarios <- hru_burn %>% group_by(scenario) %>% summarise(area_ha = sum(area_ha)) %>% mutate(real_per = area_ha / (area *100)*100 )
+    
+    annuals_t <- annuals_t %>% left_join(burn_scenarios, by=c("perc" = "scenario")) 
+    annuals_t$real_per[annuals_t$perc == 0] <- 0
+    annuals_t$basin <- "Semi-Arid, Mixed Land Use Basin"
+    
+    flow <- rbind(annuals_a, annuals_t)
+    flow <- flow[flow$year != 1987,] #remove the extra year
+    p1 <- threshold_plot(flow, "ET", "Annual Evapotranspiration (mm)")
+    
+    png(file.path(fig_save_path, "figA2-ET-changes.png"),
+        res=300, units="cm", width=30, height=15)
+    p1
+    dev.off() 
 #section 8: table A2: best fit line fits and thresholds ------ 
   #pull all individual threshold files and clean/organize 
     files <- list.files(data_save_path, pattern="threshold")  
