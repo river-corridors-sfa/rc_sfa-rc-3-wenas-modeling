@@ -156,6 +156,6 @@
     return(m)
   }
 
-  get_aridity(aridity, bb_box=c(-120.285210,-120.134462,34.473902,34.552536)) 
-  get_aridity(aridity, point=c(-115.76444020831659,45.09075111989275)) 
+  get_aridity(aridity, bb_box=c(-122.408752,-121.951447,36.987240, 37.3023155)) 
+  get_aridity(aridity, point=c( -119.3899833, 34.64203338)) 
   

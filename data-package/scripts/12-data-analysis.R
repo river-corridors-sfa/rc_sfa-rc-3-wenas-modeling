@@ -162,7 +162,7 @@
                                                                                               lower=NA, 
                                                                                               upper=NA)
     ceiling_dec <- function(x, level=1) round(x + 5*10^(-level-1), level)
-    
+    floor_dec <- function(x, level=1) round(x - 5*10^(-level-1), level)
     range <- ceiling_dec(max(limits$range)*1.2,2)
     
     #if max is futher from median start there, otherwise start from the bottom
@@ -180,6 +180,17 @@
       }
     }
     
+    #get consistent breaks 
+    order_magnitude <- round(log10(limits$upper - limits$lower),1) #what significance level is the data
+    if(mean(order_magnitude) < 1){
+      step_size <- signif(10^order_magnitude / 6, 1) #how big should steps be
+    }else{
+      step_size <- ceiling((10^order_magnitude / 6)/10)*10 #how big should steps be
+    }
+    limits$break_start <- floor(limits$lower / step_size) * step_size
+    limits$break_end <- ceiling(limits$upper / step_size) * step_size
+    limits$break_by <- step_size
+  
     
     #limits are set so the same amount of area is shown in both
     p2 <- ggplot() + 
@@ -196,8 +207,10 @@
       facet_wrap(~basin, scale="free_y") +
       facetted_pos_scales(
         y = list(
-          basin == "Humid, Forested Basin" ~ scale_y_continuous(limits=c(limits$lower[1], limits$upper[1])), 
-          basin == "Semi-Arid, Mixed Land Use Basin" ~ scale_y_continuous(limits=c(limits$lower[2], limits$upper[2]))))
+          basin == "Humid, Forested Basin" ~ scale_y_continuous(limits=c(limits$lower[1], limits$upper[1]), 
+                                                                breaks=seq(limits$break_start[1], limits$break_end[1], by=limits$break_by[1])), 
+          basin == "Semi-Arid, Mixed Land Use Basin" ~ scale_y_continuous(limits=c(limits$lower[2], limits$upper[2]),
+                                                                          breaks=seq(limits$break_start[2], limits$break_end[2], by=limits$break_by[2]))))
     
     if(is.null(legend.pos) == F){
       p2 <- p2 + theme(legend.position = legend.pos) 
@@ -403,14 +416,17 @@
       per <- (new - old) / old * 100
       return(per)
     } 
+     
     
-    annual_change <- data %>% select(any_of(c("basin", "year","sev", "real_per", metric))) %>% 
-      pivot_wider(names_from=sev, values_from=!!sym(metric)) %>% 
-      fill(UNBURN, .direction="up") %>% 
+    annual_change <- data %>% group_by(real_per, sev, basin) %>%  
+      summarise(mean = mean(get(metric))) %>%
+      pivot_wider(names_from=sev, values_from=mean) %>% 
+      arrange(basin, real_per) %>% ungroup() %>%
+      fill(UNBURN) %>%
       mutate(LOW = change(UNBURN, LOW), 
              MOD = change(UNBURN, MOD),
              HIGH = change(UNBURN, HIGH),
-             UNBURN = change(UNBURN, UNBURN)) %>% select(basin, year,real_per, LOW, MOD, HIGH, UNBURN) %>% 
+             UNBURN = change(UNBURN, UNBURN)) %>% select(basin, real_per, LOW, MOD, HIGH, UNBURN) %>% 
       pivot_longer(LOW:UNBURN, values_to = metric,  names_to = "sev") 
     
     #remove scenarios that don't make sense (0 percent burn but not burned, greater than 0 burn but unburned)
@@ -418,22 +434,12 @@
     annual_change <- annual_change[!(annual_change$real_per > 0 & annual_change$sev== "UNBURN"),]
     annual_change$sev <- factor(annual_change$sev, levels=c("UNBURN","LOW", "MOD", "HIGH"), ordered = T)
     
-    annual_change <- annual_change %>% group_by(basin, sev, real_per) %>%
-      summarise(
-        q_0.05 = quantile(get(metric), 0.05),
-        q_0.25 = quantile(get(metric), 0.25),
-        q_0.5  = quantile(get(metric), 0.5),
-        q_0.75 = quantile(get(metric), 0.75),
-        q_0.95 = quantile(get(metric), 0.95),
-        mean = mean(get(metric)),
-        sd= sd(get(metric)))
-    
     annual_sum <- annual_change %>% group_by(basin, sev) %>% 
-      summarise(min = min(mean),
-                max = max(mean))
+      summarise(min = min(get(metric)),
+                max = max(get(metric)))
     write.csv(annual_sum, file.path(data_save_path, paste0(metric, "_perc_change.csv")), row.names=F)
     
-    return(annual_change)
+    return(annual_sum)
   }
   
   #get absolute change from unburned for a metric 
@@ -444,13 +450,16 @@
       return(abs)
     } 
     
-    annual_change <- data %>% select(any_of(c("basin", "year","sev", "real_per", metric))) %>% 
-      pivot_wider(names_from=sev, values_from=!!sym(metric)) %>% 
-      fill(UNBURN, .direction="up") %>% 
+    
+    annual_change <- data %>% group_by(real_per, sev, basin) %>%  
+      summarise(mean = mean(get(metric))) %>%
+      pivot_wider(names_from=sev, values_from=mean) %>% 
+      arrange(basin, real_per) %>% ungroup() %>%
+      fill(UNBURN) %>%
       mutate(LOW = change(UNBURN, LOW), 
              MOD = change(UNBURN, MOD),
              HIGH = change(UNBURN, HIGH),
-             UNBURN = change(UNBURN, UNBURN)) %>% select(basin, year,real_per, LOW, MOD, HIGH, UNBURN) %>% 
+             UNBURN = change(UNBURN, UNBURN)) %>% select(basin, real_per, LOW, MOD, HIGH, UNBURN) %>% 
       pivot_longer(LOW:UNBURN, values_to = metric,  names_to = "sev") 
     
     #remove scenarios that don't make sense (0 percent burn but not burned, greater than 0 burn but unburned)
@@ -458,24 +467,12 @@
     annual_change <- annual_change[!(annual_change$real_per > 0 & annual_change$sev== "UNBURN"),]
     annual_change$sev <- factor(annual_change$sev, levels=c("UNBURN","LOW", "MOD", "HIGH"), ordered = T)
     
-    annual_change <- annual_change %>% group_by(basin, sev, real_per) %>%
-      summarise(
-        q_0.05 = quantile(get(metric), 0.05),
-        q_0.25 = quantile(get(metric), 0.25),
-        q_0.5  = quantile(get(metric), 0.5),
-        q_0.75 = quantile(get(metric), 0.75),
-        q_0.95 = quantile(get(metric), 0.95),
-        mean = mean(get(metric)),
-        sd= sd(get(metric)),
-        max = max(get(metric)),
-        min = min(get(metric)))
-    
     annual_sum <- annual_change %>% group_by(basin, sev) %>% 
       summarise(min = min(mean),
                 max = max(mean))
     write.csv(annual_sum, file.path(data_save_path, paste0(metric, "_abs_change.csv")), row.names=F)
     
-    return(annual_change)
+    return(annual_sum)
   }
   
   
@@ -622,7 +619,7 @@
                                                                                                 lower=NA, 
                                                                                                 upper=NA)
       ceiling_dec <- function(x, level=1) round(x + 5*10^(-level-1), level)
-      
+      floor_dec <- function(x, level=1) round(x - 5*10^(-level-1), level)
       range <- ceiling_dec(max(limits$range)*1.5,0)
       
       #if max is futher from median start there, otherwise start from the bottom
@@ -639,6 +636,13 @@
           limits$upper[x] <- limits$lower[x] + range 
         }
       }
+      
+      #get consistent breaks 
+      order_magnitude <- round(log10(limits$upper - limits$lower),1) #what significance level is the data
+      step_size <- signif(10^order_magnitude / 6, 1) #how big should steps be
+      limits$break_start <- floor(limits$lower / step_size) * step_size
+      limits$break_end <- ceiling(limits$upper / step_size) * step_size
+      limits$break_by <- step_size
       
       #make plot
       p1 <- ggplot() + 
@@ -712,7 +716,7 @@
       #plot
       p1 <-  ggplot(plot_data, aes(x=PER, y=amount, fill=path)) + geom_bar(stat="identity") +
         facet_grid(sev ~ basin) + 
-        scale_fill_manual(values=rev(pnw_palette("Cascades", n=4))) + 
+        scale_fill_manual(values=rev(pnw_palette("Cascades", n=6)[c(6,5,2,1)])) + 
         labs(x="Area Burned (%)", y="Water Yield (%)", 
              fill="Flow Path") + theme_pub() + 
         theme(legend.position = "bottom") + 
