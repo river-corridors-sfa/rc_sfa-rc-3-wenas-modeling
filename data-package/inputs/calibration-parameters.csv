@@ -1,4 +1,4 @@
-change,file,name,landuse,american,tule,description
+change,file,name,landuse,humid,semi-arid,description
 replace (v),.bsn,NPERCO,All,-9999,0.05,nitrate percolation coefficient
 replace (v),.bsn,SFTMP,All,-1.162075,1.021836,snowfall temperature (°C)
 replace (v),.bsn,SMFMN,All,1.755667,2.285585,Melt factor for snow on December 21 (mm H2O/°C-day)
