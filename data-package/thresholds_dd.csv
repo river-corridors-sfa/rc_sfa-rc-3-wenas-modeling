@@ -1,0 +1,50 @@
+Column_or_Row_Name,Unit,Definition,Data_Type
+Analysis_DetectionLimit,N/A,Analytical detection limit.,text
+Analysis_Precision,N/A,Precision of the data values.,text
+B5CA_micromol_per_liter,micromol_per_liter,"Benzenepentacarobyxlic acid (B5CA) in leachate samples. Sample names have""-filt0.2"" appended indicating it was filtered through a 0.7 micrometer filter and then a 0.2 micrometer filter. All samples were above the limit of quantification of 3.4 micromoles per liter. Methods information is embedded in first few rows with methods codes that are defined in the file that ends in ""Methods_Codes.csv"".",numeric
+B6CA_micromol_per_liter,micromol_per_liter,"Benzenehexacarobyxlic acid (B6CA) in leachate samples. Sample names have""-filt0.2"" appended indicating it was filtered through a 0.7 micrometer filter and then a 0.2 micrometer filter. All samples were above the limit of quantification of 1.6 micromoles per liter. Methods information is embedded in first few rows with methods codes that are defined in the file that ends in ""Methods_Codes.csv"".",numeric
+Collection_Date,YYYY-MM-DD,Date of sample collection.,date
+Collection_Method_Description,N/A,Description of how sample was collected.,text
+Collection_Time,hh:mm,Time of sample collection.,time
+Column_or_Row_Name,N/A,Column or row headers from each tabular file (comma-separated values (.csv) or tab-separated values (.tsv)) in the dataset.,text
+Country,N/A,Country where sample was collected.,text
+Current_Archive,N/A,Location of current archive of samples registered in the System for Earth Sample Registration (SESAR; https://www.geosamples.org/about/services#igsnregistration) system.,text
+Current_Archive_Contact,N/A,Contact of current archive of samples  registered in the System for Earth Sample Registration (SESAR; https://www.geosamples.org/about/services#igsnregistration) system.,text
+Data_Status,N/A,State of data readiness for publication and use.,text
+Data_Type,N/A,Type of data (numeric; text; date; time; datetime).,text
+Definition,N/A,Description of the information in a given column or row in the dataset.,text
+EWEB_ID,NA,Equivalent name for site used by Eugene Water and Electric Board (EWEB) and in other ESSDIVE EWEB related data packages.,text
+Field_Name,N/A,Name of field of header rows before data.,text
+File_Description,N/A,A brief description of the files in the data package.,text
+File_Name,N/A,Name of files in the data package.,text
+File_Path,N/A,File path within the data package.,text
+IGSN,N/A,International Generic Sample Numbers (IGSNs) registered with System for Earth Sample Registration (SESAR; https://www.geosamples.org/about/services#igsnregistration).,text
+Latitude_WGS1984,decimal degrees WGS1984,Geographic location (latitude) of site.,numeric
+Locality,N/A,Name of stream where sample was collected.,text
+Location_Description,N/A,Description of sample site.,text
+Longitude_WGS1984,decimal degrees WGS1984,Geographic location (longitude) of site.,numeric
+Material,N/A,Type of sample (e.g. Liquid>aqueous; sediment; etc.). Uses a controlled vocabulary from System for Earth Sample Registration (SESAR; https://www.geosamples.org/about/services#igsnregistration) system.,text
+Method_Description,N/A,Description of method code.,text
+Method_ID,N/A,Alphanumeric ID associated with method code.,text
+Method_Instrument,N/A,Instrument used in method code.,text
+Method_Lab,N/A,Laboratory in which methods were completed.,text
+Method_Name,N/A,Name of method code category.,text
+Method_Type,N/A,Type of method.,text
+MethodID_Analysis,N/A,Method code defining information about analysis of the samples that led to the data presented in the column.,text
+MethodID_DataProcessing,N/A,Method code defining information about data processing that led to the data presented in the column.,text
+MethodID_Inspection,N/A,Method code defining information about inspection of the samples that led to the data presented in the column.,text
+MethodID_Preparation,N/A,Method code defining information about preparation of the samples that led to the data presented in the column.,text
+MethodID_Preservation,N/A,Method code defining information about preservation of the samples that led to the data presented in the column.,text
+MethodID_Storage,N/A,Method code defining information about storage of the samples that led to the data presented in the column.,text
+Methods_Deviation,N/A,Deviations from the methods codes listed in the header rows. If a row has a methods deviation; it indicates that the sample from that row uses the methods indicated in the deviations column when they conflict with the methods written in the header rows above (MethodID_*).,text
+Missing_Value_Codes,N/A,"Cells with missing data are represented with a missing value code rather than an empty cell. This column describes which missing value codes were used. The recommendation for numeric data is ""-9999"" and for character data is ""N/A"".",text
+Parent_IGSN,N/A,The International Generic Sample Number (IGSN) for each site.,text
+Sample_Description,N/A,Description of sample registered with System for Earth Sample Registration (SESAR; https://www.geosamples.org/about/services#igsnregistration).,text
+Sample_Name,N/A,Name of sample.,text
+Sample_Processing,N/A,Description for how samples were processed post-collection,text
+SiteID,N/A,Identifier for each field site. SiteID is registered as the parent International Generic Sample Number (IGSN) for the samples.,text
+Standard,N/A,The Environmental System Science Data Infrastructure for a Virtual Ecosystem (ESS-DIVE) Reporting Format or other standard applied to the data file.,text
+State,N/A,State.,text
+Unit,N/A,Unit of measurement that applies to a given column or row in the data package.,text
+Unit_Basis,N/A,Basis of the units listed in the column.,text
+UTC_Offset,N/A,Coordinated Universal Time (UTC) offset of date/time stamp.,text
