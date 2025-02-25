@@ -2,11 +2,11 @@
 Runoff Ratio,Humid; Forested Basin,Low,53.1,0.72 + 3.9x10⁻⁵P + 9.7x10⁻⁷P² + -5.5x10⁻⁹P³,0.992,686,p < 0.001
 Runoff Ratio,Humid; Forested Basin,Moderate,14.7,0.72 + 2.8x10⁻⁴P + 4.4x10⁻⁷P²,0.997,3230,p < 0.001
 Runoff Ratio,Humid; Forested Basin,High,10.1,0.72 + 3.9x10⁻⁴P + 6.9x10⁻⁷P²,0.997,2820,p < 0.001
-Runoff Ratio,Semi-Arid; Mixed Land Use Basin,Low,-,0.48 + -2.4x10⁻⁴P + 1.2x10⁻⁶P² + -1.1x10⁻⁸P³,0.993,759,p < 0.001
-Runoff Ratio,Semi-Arid; Mixed Land Use Basin,Moderate,-,0.48 + -8.8x10⁻⁹P³,0.901,172,p < 0.001
-Runoff Ratio,Semi-Arid; Mixed Land Use Basin,High,-,0.48 + 2.5x10⁻⁴P + -1.7x10⁻⁶P²,0.633,15.5,p < 0.001
-Average Nitrate Concentration,Humid; Forested Basin,Low,-,8.4x10⁻² + -5.7x10⁻⁷P² + 5.8x10⁻⁹P³,0.17,1.85,0.669
-Average Nitrate Concentration,Humid; Forested Basin,Moderate,-,8.4x10⁻² + -1.6x10⁻⁶P² + 1.6x10⁻⁸P³,0.566,11.7,0.148
+Runoff Ratio,Semi-Arid; Mixed Land Use Basin,Low,-9999,0.48 + -2.4x10⁻⁴P + 1.2x10⁻⁶P² + -1.1x10⁻⁸P³,0.993,759,p < 0.001
+Runoff Ratio,Semi-Arid; Mixed Land Use Basin,Moderate,-9999,0.48 + -8.8x10⁻⁹P³,0.901,172,p < 0.001
+Runoff Ratio,Semi-Arid; Mixed Land Use Basin,High,-9999,0.48 + 2.5x10⁻⁴P + -1.7x10⁻⁶P²,0.633,15.5,p < 0.001
+Average Nitrate Concentration,Humid; Forested Basin,Low,-9999,8.4x10⁻² + -5.7x10⁻⁷P² + 5.8x10⁻⁹P³,0.17,1.85,0.669
+Average Nitrate Concentration,Humid; Forested Basin,Moderate,-9999,8.4x10⁻² + -1.6x10⁻⁶P² + 1.6x10⁻⁸P³,0.566,11.7,0.148
 Average Nitrate Concentration,Humid; Forested Basin,High,70.3,8.4x10⁻² + 1.1x10⁻¹¹P⁴,0.958,436,p < 0.001
 Average Nitrate Concentration,Semi-Arid; Mixed Land Use Basin,Low,66.2,4.8x10⁻² + 1.2x10⁻⁸P³,0.927,242,p < 0.001
 Average Nitrate Concentration,Semi-Arid; Mixed Land Use Basin,Moderate,52.3,4.8x10⁻² + 1.1x10⁻⁶P² + 2.2x10⁻⁹P³,0.963,232,p < 0.001
@@ -16,7 +16,7 @@ Annual Nitrate Load (10⁴),Humid; Forested Basin,Moderate,25.7,2.2 + 4.8x10⁻�
 Annual Nitrate Load (10⁴),Humid; Forested Basin,High,8.8,2.2 + 9.1x10⁻³P + -1.2x10⁻⁴P² + 1.1x10⁻⁶P³,0.986,407,p < 0.001
 Annual Nitrate Load (10⁴),Semi-Arid; Mixed Land Use Basin,Low,93.5,0.65 + 1.3x10⁻⁷P³,0.914,202,p < 0.001
 Annual Nitrate Load (10⁴),Semi-Arid; Mixed Land Use Basin,Moderate,91.6,0.65 + -3.8x10⁻⁴P + 1.7x10⁻⁵P²,0.944,151,p < 0.001
-Annual Nitrate Load (10⁴),Semi-Arid; Mixed Land Use Basin,High,-,0.64 + -1.4x10⁻³P + 4.7x10⁻⁵P² + -2.4x10⁻⁷P³,0.959,131,p < 0.001
+Annual Nitrate Load (10⁴),Semi-Arid; Mixed Land Use Basin,High,-9999,0.64 + -1.4x10⁻³P + 4.7x10⁻⁵P² + -2.4x10⁻⁷P³,0.959,131,p < 0.001
 Average DOC Concentration,Humid; Forested Basin,Low,19.3,0.55 + 1.3x10⁻³P + 4.7x10⁻⁵P² + -2.3x10⁻⁷P³,0.997,1900,p < 0.001
 Average DOC Concentration,Humid; Forested Basin,Moderate,12.5,0.54 + 3.6x10⁻³P + 1.7x10⁻⁵P²,0.995,1740,p < 0.001
 Average DOC Concentration,Humid; Forested Basin,High,8.4,0.55 + 4.3x10⁻³P + 1.6x10⁻⁵P²,0.993,1340,p < 0.001
