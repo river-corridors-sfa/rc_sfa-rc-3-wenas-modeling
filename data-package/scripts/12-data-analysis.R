@@ -373,7 +373,7 @@
     
     #american 
     area <- 206.834425 #km2
-    annuals_a <- read_csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "annual_loads_rch_american.csv"))
+    annuals_a <- read_csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "annual_loads_rch_humid.csv"))
     annuals_a$perc <- ifelse(annuals_a$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_a$scenario, "_", i=2)))
     annuals_a$sev <- factor(annuals_a$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
@@ -389,7 +389,7 @@
     
     #tule 
     area <- 249.9807#km2
-    annuals_t <- read_csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "annual_loads_rch_tule.csv"))
+    annuals_t <- read_csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "annual_loads_rch_semi-arid.csv"))
     annuals_t$perc <- ifelse(annuals_t$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_t$scenario, "_", i=2)))
     annuals_t$sev <- factor(annuals_t$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
