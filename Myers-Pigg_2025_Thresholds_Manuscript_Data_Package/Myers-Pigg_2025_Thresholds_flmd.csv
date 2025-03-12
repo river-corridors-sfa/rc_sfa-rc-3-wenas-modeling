@@ -1,7 +1,7 @@
 File_Name,File_Description,Standard,Missing_Value_Codes,File_Path
-readme_Myers-Pigg_2025_Thresholds.pdf,Data package level readme. Contains data package summary; acknowledgements; and contact information.,N/A,N/A,/Butler_2024_WT_WRF_Hydro_Manuscript_Data_Package
-Myers-Pigg_2025_Thresholds_flmd.csv,File-level metadata that lists and describes all of the files contained in the data package.,ESS-DIVE FLMD v1; ESS-DIVE CSV v1,"""N/A""; ""-9999""; """"; ""NA""",/Butler_2024_WT_WRF_Hydro_Manuscript_Data_Package
-Myers-Pigg_2025_Thresholds_dd.csv,"Data dictionary that defines column and row headers across all tabular data files (files ending in "".csv"" or "".tsv"") in the data package.",ESS-DIVE CSV v1,"""N/A""; ""-9999""; """"; ""NA""",/Butler_2024_WT_WRF_Hydro_Manuscript_Data_Package
+readme_Myers-Pigg_2025_Thresholds.pdf,Data package level readme. Contains data package summary; acknowledgements; and contact information.,N/A,N/A,/Myers-Pigg_2025_Thresholds_Manuscript_Data_Package
+Myers-Pigg_2025_Thresholds_flmd.csv,File-level metadata that lists and describes all of the files contained in the data package.,ESS-DIVE FLMD v1; ESS-DIVE CSV v1,"""N/A""; ""-9999""; """"; ""NA""",/Myers-Pigg_2025_Thresholds_Manuscript_Data_Package
+Myers-Pigg_2025_Thresholds_dd.csv,"Data dictionary that defines column and row headers across all tabular data files (files ending in "".csv"" or "".tsv"") in the data package.",ESS-DIVE CSV v1,"""N/A""; ""-9999""; """"; ""NA""",/Myers-Pigg_2025_Thresholds_Manuscript_Data_Package
 thresholds_workflow.pdf,Step by step directions on the procedure of building and running the SWAT models and analyzing the outputs.,N/A,N/A,/Myers-Pigg_2025_Thresholds_Manuscript_Data_Package
 Absolute_SWAT_Values.txt,,N/A,N/A,/Myers-Pigg_2025_Thresholds_Manuscript_Data_Package/inputs
 calibration-parameters.csv,,ESS-DIVE CSV v1,"""N/A""; ""-9999""; """"; ""NA""",/Myers-Pigg_2025_Thresholds_Manuscript_Data_Package/inputs
