@@ -32,12 +32,12 @@ flow_mm_yr,millimeters per year,The annual streamflow at the basin outlet.,numer
 humid,N/A,The calibrated parameter values for the humid; primarily forested basin.,numeric,2,"calibration-parameters.csv, table1-basin_summary.csv"
 int,N/A,The value of the intercept value in the line of best fit for area burned and the response variable.,numeric,6,"thresholds_avg_doc_mgL.csv, thresholds_avg_nitrate_mgL.csv, thresholds_doc_kg_yr.csv, thresholds_ET.csv, thresholds_nitrate_kg_yr.csv, thresholds_rr.csv"
 landuse,N/A,"Either ""all"" if it applies to all landuses within the model or the Soil and Water Assessment Tool (SWAT) landuse code for the applicable landuse.",text,1,calibration-parameters.csv
-max,N/A,The maximum value.,numeric,4,"avg_doc_mgL_perc_change.csv, avg_nitrate_mgL_perc_change.csv, flow_mm_yr_abs_change.csv, flow_mm_yr_perc_change.csv"
+max,N/A,"The maximum value, which varies by file. Refer to the file name for details on what the value represents (e.g., flow_mm_yr_abs_change indicates the maximum absolute change in flow, measured in millimeters per year).",numeric,4,"avg_doc_mgL_perc_change.csv, avg_nitrate_mgL_perc_change.csv, flow_mm_yr_abs_change.csv, flow_mm_yr_perc_change.csv"
 max_High,N/A,The maximum value for the high severity scenario.,numeric,1,flowpath_change.csv
 max_Low,N/A,The maximum value for the low severity scenario.,numeric,1,flowpath_change.csv
 max_Moderate,N/A,The maximum value for the moderate severity scenario.,numeric,1,flowpath_change.csv
-metric,,,text,1,tablea2-theshold_fits.csv
-min,N/A,The minimum value.,numeric,4,"avg_doc_mgL_perc_change.csv, avg_nitrate_mgL_perc_change.csv, flow_mm_yr_abs_change.csv, flow_mm_yr_perc_change.csv"
+metric,N/A,The name of the measurement(s) used to describe the test basins.,text,1,tablea2-theshold_fits.csv
+min,N/A,"The minimum value, which varies by file. Refer to the file name for details on what the value represents (e.g., flow_mm_yr_abs_change indicates the minimum absolute change in flow, measured in millimeters per year).",numeric,4,"avg_doc_mgL_perc_change.csv, avg_nitrate_mgL_perc_change.csv, flow_mm_yr_abs_change.csv, flow_mm_yr_perc_change.csv"
 min_High,N/A,The minimum value for the high severity scenario.,numeric,1,flowpath_change.csv
 min_Low,N/A,The minimum value for the low severity scenario.,numeric,1,flowpath_change.csv
 min_Moderate,N/A,The minimum value for the moderate severity scenario.,numeric,1,flowpath_change.csv
