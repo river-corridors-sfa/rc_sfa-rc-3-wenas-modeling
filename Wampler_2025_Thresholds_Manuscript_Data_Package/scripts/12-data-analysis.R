@@ -1,8 +1,9 @@
 ## analyze the wildfire scenarios output from fire scenarios after cleaning with 11-clean-model-outputs 
   #written by Katie A. Wampler on 10-25-2024 
 
-  fig_save_path <-  "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/figures"
-  data_save_path <-  "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/summary-outputs"
+  working_dir <- "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling"
+  fig_save_path <-  paste0(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/figures")
+  data_save_path <-  paste0(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/summary-outputs")
 
 #section 0: load libraries and functions -------
   library(tools)
@@ -373,7 +374,7 @@
     
     #american 
     area <- 206.834425 #km2
-    annuals_a <- read_csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "annual_loads_rch_humid.csv"))
+    annuals_a <- read_csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "annual_loads_rch_american.csv"))
     annuals_a$perc <- ifelse(annuals_a$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_a$scenario, "_", i=2)))
     annuals_a$sev <- factor(annuals_a$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
@@ -389,7 +390,7 @@
     
     #tule 
     area <- 249.9807#km2
-    annuals_t <- read_csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "annual_loads_rch_semi-arid.csv"))
+    annuals_t <- read_csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "annual_loads_rch_tule.csv"))
     annuals_t$perc <- ifelse(annuals_t$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_t$scenario, "_", i=2)))
     annuals_t$sev <- factor(annuals_t$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
@@ -677,10 +678,10 @@
       
 #section 4: figure 3: relative change in flow paths -------
     #load data
-      df <- read.csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "hru_summary_american.csv"))
+      df <- read.csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "hru_summary_american.csv"))
       df$basin <- "Humid, Forested Basin"
       
-      df2 <- read.csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "hru_summary_tule.csv"))
+      df2 <- read.csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "hru_summary_tule.csv"))
       df2$basin <- "Semi-Arid, Mixed Land Use Basin"
       flow <- rbind(df, df2)
       flow <- flow[flow$year != 1987,] #remove the extra year
@@ -840,7 +841,7 @@
 #section 8: figure A2: Change in ET for each scenario ------ 
     #load data
     area <- 206.834425 #km2
-    annuals_a <- read.csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "hru_summary_american.csv"))
+    annuals_a <- read.csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "hru_summary_american.csv"))
     annuals_a$perc <- ifelse(annuals_a$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_a$scenario, "_", i=2)))
     annuals_a$sev <- factor(annuals_a$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
@@ -856,7 +857,7 @@
     
     
     area <- 249.9807#km2
-    annuals_t <- read.csv(file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/data", "hru_summary_tule.csv"))
+    annuals_t <- read.csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "hru_summary_tule.csv"))
     annuals_t$perc <- ifelse(annuals_t$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_t$scenario, "_", i=2)))
     annuals_t$sev <- factor(annuals_t$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
@@ -1012,5 +1013,5 @@
     pars <- pars[order(pars$file, pars$landuse, pars$name),]
     
   #save for some manual manipulation 
-    write.csv(pars, file.path("~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/inputs", "calibration-parameters.csv"), quote=F, row.names=F)
+    write.csv(pars, file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/inputs", "calibration-parameters.csv"), quote=F, row.names=F)
     

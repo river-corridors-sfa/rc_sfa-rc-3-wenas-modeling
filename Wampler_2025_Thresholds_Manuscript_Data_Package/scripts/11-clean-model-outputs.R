@@ -3,8 +3,9 @@
   #NOTE: this code can take several hours to run
 
 #set save path
-  data_save_path <- "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/cleaned-rch-files"
-  summary_save_path <- "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling/data-package/outputs/summary-outputs"
+  working_dir <- "~/1_Research/0_Misc/rc_sfa-rc-3-wenas-modeling"
+  data_save_path <- paste0(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/cleaned-rch-files")
+  summary_save_path <- paste0(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/summary-outputs")
   
 #section 0: load libraries and functions -------
   library(tools)
