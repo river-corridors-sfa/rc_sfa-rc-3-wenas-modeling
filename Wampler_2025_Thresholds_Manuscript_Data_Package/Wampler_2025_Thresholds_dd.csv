@@ -2,19 +2,19 @@ Column_or_Row_Name,Unit,Definition,Data_Type
 Column_or_Row_Name,N/A,Column or row headers from each csv file in the dataset.,text
 Data_Type,N/A,Type of data (numeric; text; date; time; datetime).,text
 Definition,N/A,Description of the information in a given column or row in the dataset.,text
-ET,millimeters per year,The average basin evapotranspiration.,numeric
+ET,millimeters per year,The average basin evapotranspiration (ET).,numeric
 F_stat,N/A,The F-statistic for the line of best fit for area burned and the response variable.,numeric
 File_Description,N/A,A brief description of the files in the data package.,text
 File_Name,N/A,Name of files in the data package.,text
 File_Path,N/A,File path within the data package.,text
-GWQ,millimeters per year,The average depth of water contributing to streamflow from shallow groundwater flow.,numeric
-GWQ_PER,percent,The average percentage of water contributing to streamflow from shallow groundwater flow.,numeric
-LATQ,millimeters per year,The average depth of water contributing to streamflow from lateral flow.,numeric
-LATQ_PER,percent,The average percentage of water contributing to streamflow from lateral flow.,numeric
+GWQ,millimeters per year,The average depth of water contributing to streamflow from shallow groundwater flow (GWQ).,numeric
+GWQ_PER,percent,The average percentage of water contributing to streamflow from shallow groundwater flow (GWQ).,numeric
+LATQ,millimeters per year,The average depth of water contributing to streamflow from lateral flow (LATQ).,numeric
+LATQ_PER,percent,The average percentage of water contributing to streamflow from lateral flow (LATQ).,numeric
 Missing_Value_Codes,N/A,"Cells with missing data are represented with a missing value code rather than an empty cell. This column describes which missing value codes were used. The recommendation for numeric data is ""-9999"" and for character data is ""N/A"".",text
 PRECIP,millimeters per year,The average annual precipitation across the basin.,numeric
-SURQ,millimeters per year,The average depth of water contributing to streamflow from surface flow.,numeric
-SURQ_PER,percent,The average percentage of water contributing to streamflow from surface flow.,numeric
+SURQ,millimeters per year,The average depth of water contributing to streamflow from surface flow (SURQ).,numeric
+SURQ_PER,percent,The average percentage of water contributing to streamflow from surface flow (SURQ).,numeric
 Standard,N/A,ESS-DIVE Reporting Format or other standard applied to the data file.,text
 Unit,N/A,Unit of measurement that applies to a given column or row in the data package.,text
 avg_doc_mgL,milligrams per liter,Average annual dissolved organic carbon (DOC) concentration.,numeric
