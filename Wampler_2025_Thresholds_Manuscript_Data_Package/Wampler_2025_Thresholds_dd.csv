@@ -1,0 +1,67 @@
+Column_or_Row_Name,Unit,Definition,Data_Type
+Column_or_Row_Name,N/A,Column or row headers from each csv file in the dataset.,text
+Data_Type,N/A,Type of data (numeric; text; date; time; datetime).,text
+Definition,N/A,Description of the information in a given column or row in the dataset.,text
+ET,millimeters per year,The average basin evapotranspiration (ET).,numeric
+F_stat,N/A,The F-statistic for the line of best fit for area burned and the response variable.,numeric
+File_Description,N/A,A brief description of the files in the data package.,text
+File_Name,N/A,Name of files in the data package.,text
+File_Path,N/A,File path within the data package.,text
+GWQ,millimeters per year,The average depth of water contributing to streamflow from shallow groundwater flow (GWQ).,numeric
+GWQ_PER,percent,The average percentage of water contributing to streamflow from shallow groundwater flow (GWQ).,numeric
+LATQ,millimeters per year,The average depth of water contributing to streamflow from lateral flow (LATQ).,numeric
+LATQ_PER,percent,The average percentage of water contributing to streamflow from lateral flow (LATQ).,numeric
+Missing_Value_Codes,N/A,"Cells with missing data are represented with a missing value code rather than an empty cell. This column describes which missing value codes were used. The recommendation for numeric data is ""-9999"" and for character data is ""N/A"".",text
+PRECIP,millimeters per year,The average annual precipitation across the basin.,numeric
+SURQ,millimeters per year,The average depth of water contributing to streamflow from surface flow (SURQ).,numeric
+SURQ_PER,percent,The average percentage of water contributing to streamflow from surface flow (SURQ).,numeric
+Standard,N/A,ESS-DIVE Reporting Format or other standard applied to the data file.,text
+Unit,N/A,Unit of measurement that applies to a given column or row in the data package.,text
+avg_doc_mgL,milligrams per liter,Average annual dissolved organic carbon (DOC) concentration.,numeric
+avg_nitrate_mgL,milligrams per liter,Average annual nitrate concentration.,numeric
+basin,N/A,The name of the test basin: humid or semi-arid.,text
+c1,N/A,The value of the first coefficient value in the line of best fit for area burned and the response variable.,numeric
+c2,N/A,The value of the second coefficient value in the line of best fit for area burned and the response variable.,numeric
+c3,N/A,The value of the third coefficient value in the line of best fit for area burned and the response variable.,numeric
+change,N/A,The type of parameter change used for the parameter.,text
+description,N/A,The description of the meaning of the parameter within the model.,text
+doc_kg_yr,kilograms per year,The annual load of dissolved organic carbon (DOC).,numeric
+equation,N/A,The equation for the line of best fit for area burned and the response variable.,text
+file,N/A,The Soil and Water Assessment Tool (SWAT) file type the parameter is located in.,text
+flow_mm_yr,millimeters per year,The annual streamflow at the basin outlet.,numeric
+humid,N/A,The calibrated parameter values for the humid; primarily forested basin.,numeric
+int,N/A,The value of the intercept value in the line of best fit for area burned and the response variable.,numeric
+landuse,N/A,"Either ""all"" if it applies to all landuses within the model or the Soil and Water Assessment Tool (SWAT) landuse code for the applicable landuse.",text
+max,N/A,"The maximum value, which varies by file. Refer to the file name for details on what the value represents (e.g., flow_mm_yr_abs_change indicates the maximum absolute change in flow, measured in millimeters per year).",numeric
+max_High,N/A,The maximum value for the high severity scenario.,numeric
+max_Low,N/A,The maximum value for the low severity scenario.,numeric
+max_Moderate,N/A,The maximum value for the moderate severity scenario.,numeric
+metric,N/A,The name of the measurement(s) used to describe the test basins.,text
+min,N/A,"The minimum value, which varies by file. Refer to the file name for details on what the value represents (e.g., flow_mm_yr_abs_change indicates the minimum absolute change in flow, measured in millimeters per year).",numeric
+min_High,N/A,The minimum value for the high severity scenario.,numeric
+min_Low,N/A,The minimum value for the low severity scenario.,numeric
+min_Moderate,N/A,The minimum value for the moderate severity scenario.,numeric
+model,N/A,The model used for the line of best fit for area burned and the response variable. See manuscript for more details on model formulas.,text
+name,N/A,The Soil and Water Assessment Tool (SWAT) parameter name.,text
+nitrate_kg_yr,kilograms per year,The annual load of nitrate.,numeric
+p_val,N/A,The p-value for the line of best fit for area burned and the response variable.,text
+path,N/A,The path water takes to generate streamflow: surface; lateral; shallow groundwater; deep groundwater.,text
+precip_mm,millimeters per year,The average annual precipitation across the basin.,numeric
+q_05_doc,milligrams per liter,The 5th quantile of dissolved organic carbon (DOC) concentrations.,numeric
+q_05_nitrate,milligrams per liter,The 5th quantile of nitrate concentrations.,numeric
+q_25_doc,milligrams per liter,The 25th quantile of dissolved organic carbon (DOC) concentrations.,numeric
+q_25_nitrate,milligrams per liter,The 25th quantile of nitrate concentrations.,numeric
+q_50_doc,milligrams per liter,The median of dissolved organic carbon (DOC) concentrations.,numeric
+q_50_nitrate,milligrams per liter,The median of nitrate concentrations.,numeric
+q_75_doc,milligrams per liter,The 75th quantile of dissolved organic carbon (DOC) concentrations.,numeric
+q_75_nitrate,milligrams per liter,The 75th quantile of nitrate concentrations.,numeric
+q_95_doc,milligrams per liter,The 95th quantile of dissolved organic carbon (DOC) concentrations.,numeric
+q_95_nitrate,milligrams per liter,The 95th quantile of nitrate concentrations.,numeric
+r2,N/A,The r-squared value for the line of best fit for area burned and the response variable.,numeric
+scenario,N/A,"The area burned scenario given as ""PER_*"" where the * is the percentage burned in the scenario.",text
+sd_doc_mgL,milligrams per liter,The standard deviation of dissolved organic carbon (DOC) concentrations.,numeric
+sd_nitrate_mgL,milligrams per liter,The standard deviation of nitrate concentrations.,numeric
+semi-arid,N/A,The calibrated parameter values for the semi-arid; mixed landuse basin.,numeric
+sev,N/A,The burn severity level (low; moderate; high).,text
+thresh,percent,The percentage of area burn required to cross the threshold of unburned variability. See manuscript for more details on how this was derived.,numeric
+year,N/A,The year the precipitation records came from.,numeric
