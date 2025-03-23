@@ -22,7 +22,8 @@
   library(patchwork)
   library(ggnewscale)
   library(dplyr)
-
+  library(usmap)
+  
   
   #theme for nice consistent plotting
   theme_pub <- function (){
@@ -492,6 +493,7 @@
     modelwd <- "C:/SWAT/American River Simp2/American River Simp2/"
     basin <- st_read(file.path(modelwd, "Watershed/shapes/subs1.shp"))
     basin <- st_union(basin) %>% st_sf()
+    basin_am <- basin
     dem <- raster(file.path(modelwd, "Source/hillshade.tif"))
     landuse <- raster(file.path(modelwd, "Source/crop/landcover_2016.tif"))
     streams <- st_read(file.path(modelwd, "Watershed/shapes/riv1.shp"))
@@ -527,6 +529,7 @@
     modelwd <- "C:/SWAT/Tule River Simp2/Tule River Simp2/"
     basin <- st_read(file.path(modelwd, "Watershed/shapes/subs1.shp"))
     basin <- st_union(basin) %>% st_sf()
+    basin_tu <- basin
     dem <- raster(file.path(modelwd, "Source/hillshade.tif"))
     landuse <- raster(file.path(modelwd, "Source/crop/landcover_2016.tif"))
     streams <- st_read(file.path(modelwd, "Watershed/shapes/riv1.shp"))
@@ -558,9 +561,37 @@
       annotate(geom = "text", x = x, y = y, label = "Semi-Arid, Mixed Land Use Basin",
                size=5, fontface="bold") 
      
-    png(file.path(fig_save_path, "fig1-basin_maps.png"), units="cm", height = 15, width=30, res=300)
-    ggarrange(p1, p2, ncol=2, labels="auto", common.legend = T, legend="bottom",
-              font.label = list(size=30), align=c("h"), label.x=0.11, label.y=0.98)
+    #add map showing general location 
+      states <- usmap::us_map()
+      
+      #clean layers 
+      states_crop <- states[states$full %in% c("Oregon", "Washington", "Idaho", 
+                                               "California", "Nevada", "Montana", 
+                                               "Wyoming", "Utah", "New Mexico", "Arizona", 
+                                               "Colorado"),]
+      basin_am <- st_transform(basin_am, crs="EPSG:4326")
+      basin_tu <- st_transform(basin_tu, crs="EPSG:4326")
+      basins <- rbind(basin_am, basin_tu)
+      basins$label <- c("Humid, Forested", "Semi-Arid,\nMixed Land Use")
+      states_crop <- st_transform(states_crop, crs="EPSG:4326")
+      
+      #create the plot 
+      p3 <- ggplot()+ geom_sf(data=states_crop, fill="white") + 
+          theme_bw() +
+        geom_sf(data=basins, fill="darkred", color="darkred") + 
+        geom_sf_label(data = basins, aes(label=label), size=3, nudge_y = c(1, 1.4)) +
+        theme_bw() + coord_sf(xlim=c(-125, -115), ylim=c(33, 49)) +
+        theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
+              axis.text.x = element_text(angle = 45, hjust=1))+
+        theme(panel.grid.major = element_line(color="gray80"))
+      
+    basin_plot <- ggarrange(p1, p2, ncol=2, labels="auto", common.legend = T, legend="bottom",
+                            font.label = list(size=30), align=c("h"), label.x=0.11, label.y=0.98)
+
+    png(file.path(fig_save_path, "fig1-basin_maps.png"), units="cm", height = 15, width=38, res=300)
+    ggarrange(basin_plot,p3, ncol=2,
+                widths=c(0.81,0.19),
+                align="v")
     dev.off()
     
 #section 2: table 1: extract basin descriptions -- IMPORTANT: Have correct unburned model ouputs run in SWAT projects -------
