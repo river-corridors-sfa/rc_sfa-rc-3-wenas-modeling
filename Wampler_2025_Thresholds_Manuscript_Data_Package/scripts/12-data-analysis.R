@@ -576,7 +576,7 @@
       states_crop <- st_transform(states_crop, crs="EPSG:4326")
       
       #create the plot 
-      p3 <- ggplot()+ geom_sf(data=states_crop, fill="white") + 
+      p3 <- ggplot()+ geom_sf(data=states_crop, fill="white", linewidth=1) + 
           theme_bw() +
         geom_sf(data=basins, fill="darkred", color="darkred") + 
         geom_sf_label(data = basins, aes(label=label), size=3, nudge_y = c(1, 1.4)) +
