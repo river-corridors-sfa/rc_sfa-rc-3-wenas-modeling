@@ -21,6 +21,7 @@
   library(raster) 
   library(patchwork)
   library(ggnewscale)
+  library(Rmisc)
   library(dplyr)
   library(usmap)
   
@@ -375,7 +376,7 @@
     
     #american 
     area <- 206.834425 #km2
-    annuals_a <- read_csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "annual_loads_rch_american.csv"))
+    annuals_a <- read_csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "annual_loads_rch_humid.csv"))
     annuals_a$perc <- ifelse(annuals_a$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_a$scenario, "_", i=2)))
     annuals_a$sev <- factor(annuals_a$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
@@ -391,7 +392,7 @@
     
     #tule 
     area <- 249.9807#km2
-    annuals_t <- read_csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "annual_loads_rch_tule.csv"))
+    annuals_t <- read_csv(file.path(working_dir, "/Wampler_2025_Thresholds_Manuscript_Data_Package/outputs/data", "annual_loads_rch_semi-arid.csv"))
     annuals_t$perc <- ifelse(annuals_t$scenario == "UNBURN", 0, as.numeric(str_split_i(annuals_t$scenario, "_", i=2)))
     annuals_t$sev <- factor(annuals_t$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
     
@@ -477,6 +478,39 @@
     return(annual_sum)
   }
   
+  #get mean across burn severity with CI for a metric 
+  get_CI <- function(data, metric, calc="perc"){ 
+    if(calc == "perc"){
+      #basic percent change function
+      change <- function(old, new){
+        per <- (new - old) / old * 100
+        return(per)
+      } 
+    }else if (calc == "abs"){
+      #basic percent change function
+      change <- function(old, new){
+        abs <- new -old
+        return(abs)
+      } 
+    }
+    
+    ci <- 
+      data %>% select(any_of(c("real_per", "basin", "sev", metric,"year"))) %>%
+      group_by(sev,basin) %>%
+      pivot_wider(names_from=sev, values_from=!!metric) %>% 
+      fill(UNBURN, .direction="up") %>%
+      mutate(LOW = change(UNBURN, LOW), 
+             MOD = change(UNBURN, MOD),
+             HIGH = change(UNBURN, HIGH),
+             UNBURN = change(UNBURN, UNBURN)) %>% 
+      pivot_longer(HIGH:UNBURN, names_to="sev", values_to = "change") %>%
+      filter(real_per > 0) %>%
+      group_by(basin, sev) %>%
+      summarise(avg = mean(change), 
+                uci = CI(change)[1], 
+                lci = CI(change)[3],
+                plusminus = uci - avg)
+    return(ci)}
   
 #section 1: figure 1: map of the two basins with landuse/dem --------
     #data for coloring landuse 
@@ -522,7 +556,7 @@
             axis.text.x = element_text(angle = 45, hjust=1)) + 
       scale_fill_manual(values=landuse_cols) + labs(fill="Land Cover") + 
       annotate(geom = "text", x = x, y = y, label = "Humid, Forested Basin",
-               size=5, fontface="bold") 
+               size=5, fontface="bold") + theme(legend.text = element_text(size = 16), legend.title=element_text(size=16, face="bold"))
   
   
   #plot tule
@@ -559,7 +593,7 @@
             axis.text.x = element_text(angle = 45, hjust=1)) + 
       scale_fill_manual(values=landuse_cols) + labs(fill="Land Cover")+ 
       annotate(geom = "text", x = x, y = y, label = "Semi-Arid, Mixed Land Use Basin",
-               size=5, fontface="bold") 
+               size=5, fontface="bold")  + theme(legend.text = element_text(size = 16), legend.title=element_text(size=16))
      
     #add map showing general location 
       states <- usmap::us_map()
@@ -579,15 +613,15 @@
       p3 <- ggplot()+ geom_sf(data=states_crop, fill="white", linewidth=1) + 
           theme_bw() +
         geom_sf(data=basins, fill="darkred", color="darkred") + 
-        geom_sf_label(data = basins, aes(label=label), size=3, nudge_y = c(1, 1.4)) +
+        geom_sf_label(data = basins, aes(label=label), size=5, nudge_y = c(1, 1.4)) +
         theme_bw() + coord_sf(xlim=c(-125, -115), ylim=c(33, 49)) +
         theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
               axis.text.x = element_text(angle = 45, hjust=1))+
         theme(panel.grid.major = element_line(color="gray80"))
       
     basin_plot <- ggarrange(p1, p2, ncol=2, labels="auto", common.legend = T, legend="bottom",
-                            font.label = list(size=30), align=c("h"), label.x=0.11, label.y=0.98)
-
+                            font.label = list(size=30), align=c("h"), label.x=0.11, label.y=0.98 ) 
+    
     png(file.path(fig_save_path, "fig1-basin_maps.png"), units="cm", height = 15, width=38, res=300)
     ggarrange(basin_plot,p3, ncol=2,
                 widths=c(0.81,0.19),
@@ -695,6 +729,7 @@
   #get change in annual yields (absolute)
       flow_change <- abs_change(data, "flow_mm_yr") %>% select("basin", "sev", "real_per", "mean")
       flow_change <- perc_change(data, "flow_mm_yr")
+      flow_change <- get_CI(data, "flow_mm_yr")
       
   #get runoff ratios 
       data$rr <- data$flow_mm_yr / data$precip_mm 
