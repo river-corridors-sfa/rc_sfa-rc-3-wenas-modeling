@@ -173,10 +173,7 @@
       if(limits$max_med[x] > limits$min_med[x]){
         limits$upper[x] <- limits$max[x] * 1.05
         limits$lower[x] <- limits$upper[x] - range
-        if(limits$lower[x] < 0){
-          limits$lower[x] <- 0
-          limits$upper[x] <- range
-        }
+        
       }else{
         limits$lower[x] <- limits$min[x] * 0.95
         limits$upper[x] <- limits$lower[x] + range 
@@ -196,10 +193,10 @@
   
     
     #limits are set so the same amount of area is shown in both
-    p2 <- ggplot() + 
+    p2 <- ggplot() +
+      geom_errorbar(data=plot_data, aes(x=real_per,y=mean, ymin=lower.ci, ymax=upper.ci, color=sev), width=2, alpha=0.6, linewidth=0.7) +
       geom_point(plot_data, mapping=aes(x=real_per, y=mean, color=sev), size=4, alpha=0.9) +
-      geom_errorbar(data=plot_data, aes(x=real_per, ymin=lower.ci, ymax=upper.ci, color=sev), width=0, linewidth=1) + 
-      scale_color_manual(values=c("darkgreen", "#3B9AB2",  "#E1AF00", "#F21A00"), labels = c("Unburned", "Low", "Moderate", "High")) + 
+      scale_color_manual(values=c("black", "#3B9AB2",  "#E1AF00", "#F21A00"), labels = c("Unburned", "Low", "Moderate", "High")) + 
       labs(x="Area Burned (%)", y=label, 
            color="Burn Severity") + theme_pub() + 
       theme(axis.title = element_text(size=18)) + 
@@ -641,26 +638,35 @@
   #load annual reach summaries 
     data <- load_annual(data_save_path)
       
-  #get annual water yields 
-      flow_plot <- data %>% group_by(real_per, sev, basin) %>%  
+  #get change in annual water yields 
+      #get flow change 
+      flow <- data %>% select(real_per, sev, basin, flow_mm_yr, year) %>% pivot_wider(names_from=sev, values_from=flow_mm_yr) %>% 
+        fill(UNBURN, .direction = "up") %>% mutate(LOW = LOW-UNBURN, MOD=MOD-UNBURN, HIGH =HIGH-UNBURN, UNBURN = 0) %>% 
+        pivot_longer(HIGH:UNBURN, names_to ="sev", values_to = "flow_mm_yr") %>% drop_na() %>% filter(!(sev == "UNBURN" & real_per != 0)) %>% ungroup()
+      flow$sev <- factor(flow$sev, levels=c("UNBURN", "LOW", "MOD", "HIGH"), ordered=T)
+      
+      
+      p2 <- threshold_plot(flow, "flow_mm_yr", "Change in Annnual Water Yield")
+      
+      flow_plot <- flow %>% group_by(real_per, sev, basin) %>%  
         summarise(mean = mean(flow_mm_yr),sd = sd(flow_mm_yr), n  = n()) %>%
         mutate(se= sd / sqrt(n),
                lower.ci = mean- qt(1 - (0.05 / 2), n - 1) * se,
                upper.ci = mean + qt(1 - (0.05 / 2), n - 1) * se)
       
       #get quantiles for unburned
-      thresh <- subset(data, data$sev == "UNBURN") 
+      thresh <- subset(flow, data$sev == "UNBURN") 
       thresh <-  thresh %>% group_by(basin) %>% summarise(
         q_0.05 = quantile(flow_mm_yr, 0.05),
         q_0.5  = quantile(flow_mm_yr, 0.5),
         q_0.95 = quantile(flow_mm_yr, 0.95))
       
       #determine best fit lines 
-      for(y in unique(data$basin)){
+      for(y in unique(flow$basin)){
         for(x in c("LOW", "MOD", "HIGH")){
-          output <- best_mod(subset(data, data$basin ==y), x, "flow_mm_yr", 
+          output <- best_mod(subset(flow, data$basin ==y), x, "flow_mm_yr", 
                              thresh[thresh$basin==y,4])
-          if(x == "LOW" & y == unique(data$basin)[1]){
+          if(x == "LOW" & y == unique(flow$basin)[1]){
             best_fit <- output[[2]]
             thresh_cross <- output[[3]]
           }else{
@@ -674,11 +680,13 @@
       
       #calculate limits 
       #get values (thresholds and points)
-      thresh_finder <- flow_plot %>% ungroup() %>% dplyr::select(basin, mean)
+      thresh_finder <- flow_plot %>% ungroup() %>% dplyr::select(basin, lower.ci, upper.ci)
+      thresh_finder <- as.data.frame(mapply(c, thresh_finder, rbind(thresh %>% dplyr::select(basin, q_0.05, q_0.95)))) 
+      thresh_finder[,2:3] <- sapply(thresh_finder[,2:3],as.numeric)
+      
 
-      limits <- thresh_finder %>% group_by(basin) %>% summarise(min = min(mean),
-                                                                max = max(mean),
-                                                                median = median(mean)) %>% mutate(
+      limits <- thresh_finder %>% group_by(basin) %>% summarise(min = min(lower.ci),
+                                                                max = max(upper.ci)) %>% mutate(median = thresh$q_0.5,
                                                                                                 range = max- min,
                                                                                                 min_med = median -min,
                                                                                                 max_med = max-median,
@@ -711,10 +719,10 @@
       limits$break_by <- step_size
       
       #make plot
-      p1 <- ggplot() + 
+      p1 <- ggplot() + geom_errorbar(data=flow_plot, aes(x=real_per, ymin=lower.ci, ymax=upper.ci, color=sev), width=0, linewidth=1, alpha=0.3) +
         geom_point(flow_plot, mapping=aes(x=real_per, y=mean, color=sev), size=4, alpha=0.9) +
-        scale_color_manual(values=c("darkgreen", "#3B9AB2",  "#E1AF00", "#F21A00"),labels = c("Unburned", "Low", "Moderate", "High")) + 
-        labs(x="Area Burned (%)", y=expression(bold(paste("Annual Water Yield (", mm, " ", yr^{-1}, ")"))), 
+        scale_color_manual(values=c("#F21A00",  "#E1AF00", "#3B9AB2", "black"),labels = c("High", "Moderate", "Low", "Unburned")) + 
+        labs(x="Area Burned (%)", y=expression(bold(paste("Change in Annual Water Yield (", mm, " ", yr^{-1}, ")"))), 
              color="Burn Severity") + theme_pub() +
         geom_line(best_fit, mapping=aes(x=real_per, y=fit_val, color=severity)) + 
         facet_wrap(~basin, scale="free_y") +
