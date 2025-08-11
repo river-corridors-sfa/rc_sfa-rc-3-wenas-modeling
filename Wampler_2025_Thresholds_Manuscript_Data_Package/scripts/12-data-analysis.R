@@ -173,7 +173,10 @@
       if(limits$max_med[x] > limits$min_med[x]){
         limits$upper[x] <- limits$max[x] * 1.05
         limits$lower[x] <- limits$upper[x] - range
-        
+        if(limits$lower[x] < 0 | any(plot_data$mean < 0)){
+          limits$lower[x] <- 0
+          limits$upper[x] <- range
+        }
       }else{
         limits$lower[x] <- limits$min[x] * 0.95
         limits$upper[x] <- limits$lower[x] + range 
