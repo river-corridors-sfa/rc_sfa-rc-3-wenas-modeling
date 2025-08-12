@@ -623,7 +623,7 @@
                             font.label = list(size=30), align=c("h"), label.x=0.11, label.y=0.98 ) 
     
     png(file.path(fig_save_path, "fig1-basin_maps.png"), units="cm", height = 15, width=38, res=300)
-    ggarrange(basin_plot,p3, ncol=2,
+    ggarrange(basin_plot,p3, ncol=2, labels=c("", "c"), font.label=list(size=30),
                 widths=c(0.81,0.19),
                 align="v")
     dev.off()
