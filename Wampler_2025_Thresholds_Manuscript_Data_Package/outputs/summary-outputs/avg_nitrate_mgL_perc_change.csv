@@ -1,9 +1,9 @@
-"basin","sev","min","max"
-"Humid, Forested Basin","UNBURN",0,0
-"Humid, Forested Basin","LOW",-2.72642499632779,0.765451490064693
-"Humid, Forested Basin","MOD",-4.65120204574366,-0.664128305290718
-"Humid, Forested Basin","HIGH",-1.44900562871764,11.1302095424178
-"Semi-Arid, Mixed Land Use Basin","UNBURN",0,0
-"Semi-Arid, Mixed Land Use Basin","LOW",-0.166216764727574,25.4845861283921
-"Semi-Arid, Mixed Land Use Basin","MOD",0.265293412112563,29.47473953839
-"Semi-Arid, Mixed Land Use Basin","HIGH",-0.803155153299032,29.6798028543917
+"basin","sev","min","max","mean"
+"Humid, Forested Basin","UNBURN",0,0,0
+"Humid, Forested Basin","LOW",-2.72642499632779,0.765451490064693,-0.853476492452335
+"Humid, Forested Basin","MOD",-4.65120204574366,-0.664128305290718,-2.18331345688457
+"Humid, Forested Basin","HIGH",-1.44900562871764,11.1302095424178,1.89876232140928
+"Semi-Arid, Mixed Land Use Basin","UNBURN",0,0,0
+"Semi-Arid, Mixed Land Use Basin","LOW",-0.166216764727574,25.4845861283921,7.01552444839439
+"Semi-Arid, Mixed Land Use Basin","MOD",0.265293412112563,29.47473953839,10.0304117592965
+"Semi-Arid, Mixed Land Use Basin","HIGH",-0.803155153299032,29.6798028543917,11.9971250690594

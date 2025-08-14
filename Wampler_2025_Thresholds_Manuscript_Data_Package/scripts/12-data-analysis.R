@@ -439,7 +439,8 @@
     
     annual_sum <- annual_change %>% group_by(basin, sev) %>% 
       summarise(min = min(get(metric)),
-                max = max(get(metric)))
+                max = max(get(metric)),
+                mean = mean(get(metric)))
     write.csv(annual_sum, file.path(data_save_path, paste0(metric, "_perc_change.csv")), row.names=F)
     
     return(annual_sum)
@@ -471,8 +472,9 @@
     annual_change$sev <- factor(annual_change$sev, levels=c("UNBURN","LOW", "MOD", "HIGH"), ordered = T)
     
     annual_sum <- annual_change %>% group_by(basin, sev) %>% 
-      summarise(min = min(mean),
-                max = max(mean))
+      dplyr::summarise(min = min(get(metric)),
+                max = max(get(metric)),
+                mean = mean(get(metric)))
     write.csv(annual_sum, file.path(data_save_path, paste0(metric, "_abs_change.csv")), row.names=F)
     
     return(annual_sum)
@@ -759,7 +761,8 @@
     dev.off() 
 
   #get perc change in concentration for results 
-    nitrate_change <- perc_change(data, "avg_nitrate_mgL")
+    nitrate_change_abs <- abs_change(data, "avg_nitrate_mgL")
+    nitrate_change_per <- perc_change(data, "avg_nitrate_mgL")
     
 #section 6: figure 5: doc load and concentration ------- 
   #load annual reach summaries 
@@ -780,7 +783,8 @@
     dev.off() 
     
   #get perc change in concentration for results 
-    doc_change <- perc_change(data, "avg_doc_mgL")
+    doc_change_per <- perc_change(data, "avg_doc_mgL")
+    doc_change_abs <- abs_change(data, "avg_doc_mgL")
     
 #section 7: figure A1: wildfire scenarios ------ 
   #plot american 
