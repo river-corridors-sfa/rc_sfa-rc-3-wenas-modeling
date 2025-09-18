@@ -556,7 +556,7 @@
       geom_sf(data=streams, color="#00008b", linewidth=0.75) + theme_bw() + 
       theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
             axis.text.x = element_text(angle = 45, hjust=1)) + 
-      scale_fill_manual(values=landuse_cols) + labs(fill="Land Cover") + 
+      scale_fill_manual(values=landuse_cols) + labs(fill="Land Use") + 
       annotate(geom = "text", x = x, y = y, label = "Humid, Forested Basin",
                size=5, fontface="bold") + theme(legend.text = element_text(size = 16), legend.title=element_text(size=16, face="bold"))
   
