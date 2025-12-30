@@ -455,6 +455,16 @@
     } 
     
     
+    annual_change <- data %>% select(all_of(c("real_per", "sev", "basin", "year", metric))) %>% 
+      pivot_wider(names_from=sev, values_from=metric) %>%  fill(UNBURN, .direction="up") %>%
+      mutate(LOW = change(UNBURN, LOW), 
+             MOD = change(UNBURN, MOD),
+             HIGH = change(UNBURN, HIGH),
+             UNBURN = change(UNBURN, UNBURN)) %>%  pivot_longer(HIGH:MOD, values_to = metric,  names_to = "sev") %>% 
+             group_by(sev, basin) %>% summarise(mean = mean(get(metric), na.rm=TRUE),
+                                                          sd = sd(get(metric), na.rm=TRUE))  
+    
+    
     annual_change <- data %>% group_by(real_per, sev, basin) %>%  
       summarise(mean = mean(get(metric))) %>%
       pivot_wider(names_from=sev, values_from=mean) %>% 
@@ -474,7 +484,8 @@
     annual_sum <- annual_change %>% group_by(basin, sev) %>% 
       dplyr::summarise(min = min(get(metric)),
                 max = max(get(metric)),
-                mean = mean(get(metric)))
+                mean = mean(get(metric)),
+                sd = sd(get(metric)))
     write.csv(annual_sum, file.path(data_save_path, paste0(metric, "_abs_change.csv")), row.names=F)
     
     return(annual_sum)
@@ -655,7 +666,7 @@
       
 
   #get change in annual yields (absolute)
-      flow_change <- abs_change(data, "flow_mm_yr") %>% select("basin", "sev", "real_per", "mean")
+      flow_change <- abs_change(data, "flow_mm_yr")
       flow_change <- perc_change(data, "flow_mm_yr")
       flow_change <- get_CI(data, "flow_mm_yr")
       
