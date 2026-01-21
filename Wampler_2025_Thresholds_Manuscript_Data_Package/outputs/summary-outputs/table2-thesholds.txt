@@ -1,4 +1,4 @@
-basin	sev	Runoff Ratio	Average Nitrate Concentration	Annual Nitrate Load (10?)	Average DOC Concentration	Annual DOC Load (10?)
+basin	sev	Runoff Ratio	Average Nitrate Concentration	Annual Nitrate Load (10^4)	Average DOC Concentration	Annual DOC Load (10^4)
 Humid; Forested Basin	Low	53.1	-	84.8	19.3	37.5
 Humid; Forested Basin	Moderate	14.7	-	25.7	12.5	27.6
 Humid; Forested Basin	High	10.1	70.3	8.8	8.4	23.5
