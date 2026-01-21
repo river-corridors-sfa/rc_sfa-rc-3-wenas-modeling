@@ -2,9 +2,9 @@ Column_or_Row_Name,Unit,Definition,Data_Type,Term_Type,Missing_Value_Code,Report
 avg_doc_mgL,milligrams per liter,Average annual dissolved organic carbon (DOC) concentration.,numeric,column_header,-9999,0.00000001
 avg_nitrate_mgL,milligrams per liter,Average annual nitrate concentration.,numeric,column_header,-9999,0.00000001
 basin,N/A,The name of the test basin: humid or semi-arid.,text,column_header,N/A,-9999
-c1,N/A,The value of the first coefficient value in the line of best fit for area burned and the response variable.,numeric,column_header,-9999,1E-16
-c2,N/A,The value of the second coefficient value in the line of best fit for area burned and the response variable.,numeric,column_header,-9999,1E-15
-c3,N/A,The value of the third coefficient value in the line of best fit for area burned and the response variable.,numeric,column_header,-9999,1E-13
+c1,N/A,The value of the first coefficient value in the line of best fit for area burned and the response variable.,numeric,column_header,-9999,1.00E-16
+c2,N/A,The value of the second coefficient value in the line of best fit for area burned and the response variable.,numeric,column_header,NA,1.00E-15
+c3,N/A,The value of the third coefficient value in the line of best fit for area burned and the response variable.,numeric,column_header,NA,1.00E-13
 change,N/A,The type of parameter change used for the parameter.,text,column_header,N/A,-9999
 Column_or_Row_Name,N/A,Column or row headers from each tabular file (csv or tsv) in the dataset.,text,column_header,N/A,-9999
 Column_or_Row_Name_Position,N/A,"The location of the column or row that contains the header names (i.e., column name or row name). The count used to identify the location assumes the numbering begins at 1 (rather than 0) and excludes columns or rows that begin with ""#"". Most data in this data package is oriented in columns, so this field indicates the tabular location of the row that holds the column names (e.g., If row 1 has the column headers, row 2 has the units, and row 3 has the data values, then this value would be 1 - to indicate the location of the column header row).",numeric,column_header,-9999,1
@@ -26,47 +26,47 @@ Header_Rows,N/A,"The number of rows or the number of columns that occur before t
 humid,N/A,The calibrated parameter values for the humid; primarily forested basin.,numeric,column_header,-9999,0.00000001
 int,N/A,The value of the intercept value in the line of best fit for area burned and the response variable.,numeric,column_header,-9999,0.00000001
 landuse,N/A,"Either ""all"" if it applies to all landuses within the model or the Soil and Water Assessment Tool (SWAT) landuse code for the applicable landuse.",text,column_header,N/A,-9999
-LATQ,millimeters per year,The average depth of water contributing to streamflow from lateral flow (LATQ).,numeric,column_header,-9999,1E-06
+LATQ,millimeters per year,The average depth of water contributing to streamflow from lateral flow (LATQ).,numeric,column_header,-9999,1.00E-06
 LATQ_PER,percent,The average percentage of water contributing to streamflow from lateral flow (LATQ).,numeric,column_header,-9999,0.00001
-max,N/A,"The maximum value, which varies by file. Refer to the file name for details on what the value represents (e.g., flow_mm_yr_abs_change indicates the maximum absolute change in flow, measured in millimeters per year).",numeric,column_header,-9999,1E-10
+max,N/A,"The maximum value, which varies by file. Refer to the file name for details on what the value represents (e.g., flow_mm_yr_abs_change indicates the maximum absolute change in flow, measured in millimeters per year).",numeric,column_header,-9999,1.00E-10
 max_High,N/A,The maximum value for the high severity scenario.,numeric,column_header,-9999,0.00000001
 max_Low,N/A,The maximum value for the low severity scenario.,numeric,column_header,-9999,0.00000001
 max_Moderate,N/A,The maximum value for the moderate severity scenario.,numeric,column_header,-9999,0.00000001
-mean,N/A,"The mean value, which varies by file. Refer to the file name for details on what the value represents (e.g., flow_mm_yr_abs_change indicates the maximum absolute change in flow, measured in millimeters per year).",numeric,column_header,-9999,1E-10
+mean,N/A,"The mean value, which varies by file. Refer to the file name for details on what the value represents (e.g., flow_mm_yr_abs_change indicates the maximum absolute change in flow, measured in millimeters per year).",numeric,column_header,-9999,1.00E-10
 metric,N/A,The name of the measurement(s) used to describe the test basins.,text,column_header,N/A,-9999
 min,N/A,"The minimum value, which varies by file. Refer to the file name for details on what the value represents (e.g., flow_mm_yr_abs_change indicates the minimum absolute change in flow, measured in millimeters per year).",numeric,column_header,-9999,0.000000001
-min_High,N/A,The minimum value for the high severity scenario.,numeric,column_header,-9999,1E-07
+min_High,N/A,The minimum value for the high severity scenario.,numeric,column_header,-9999,1.00E-07
 min_Low,N/A,The minimum value for the low severity scenario.,numeric,column_header,-9999,0.00000001
-min_Moderate,N/A,The minimum value for the moderate severity scenario.,numeric,column_header,-9999,1E-07
+min_Moderate,N/A,The minimum value for the moderate severity scenario.,numeric,column_header,-9999,1.00E-07
 Missing_Value_Code,N/A,"Cells with missing data are represented with a missing value code rather than an empty cell. This column describes which missing value codes were used. In most cases, the missing value code for numeric data is ""-9999"" and for character data is ""N/A"". Some files also use a missing value format specific to when a data value is below the limit of detection or above/below the standard curve. For these cases: a text string is included in the format ""[data type]_*|*_Raw_Not_Corrected|*_Final_Corrected"" in which the asterisks are the denoted individual data values. See the associated methods deviation (DTL_003) description for more details.",text,column_header,N/A,-9999
 model,N/A,The model used for the line of best fit for area burned and the response variable. See manuscript for more details on model formulas.,text,column_header,N/A,-9999
 name,N/A,The Soil and Water Assessment Tool (SWAT) parameter name.,text,column_header,N/A,-9999
 nitrate_kg_yr,kilograms per year,The annual load of nitrate.,numeric,column_header,-9999,0.01
-p_val,N/A,The p-value for the line of best fit for area burned and the response variable.,text,column_header,-9999,1E-30
+p_val,N/A,The p-value for the line of best fit for area burned and the response variable.,text,column_header,-9999,1.00E-30
 path,N/A,The path water takes to generate streamflow: surface; lateral; shallow groundwater; deep groundwater.,text,column_header,N/A,-9999
 PRECIP,millimeters per year,The average annual precipitation across the basin.,numeric,column_header,-9999,0.0001
 precip_mm,millimeters per year,The average annual precipitation across the basin.,numeric,column_header,-9999,0.01
-q_05_doc,milligrams per liter,The 5th quantile of dissolved organic carbon (DOC) concentrations.,numeric,column_header,-9999,1E-13
+q_05_doc,milligrams per liter,The 5th quantile of dissolved organic carbon (DOC) concentrations.,numeric,column_header,-9999,1.00E-13
 q_05_nitrate,milligrams per liter,The 5th quantile of nitrate concentrations.,numeric,column_header,-9999,0.000000001
 q_25_doc,milligrams per liter,The 25th quantile of dissolved organic carbon (DOC) concentrations.,numeric,column_header,-9999,0.00000001
 q_25_nitrate,milligrams per liter,The 25th quantile of nitrate concentrations.,numeric,column_header,-9999,0.000000001
 q_50_doc,milligrams per liter,The median of dissolved organic carbon (DOC) concentrations.,numeric,column_header,-9999,0.00000001
 q_50_nitrate,milligrams per liter,The median of nitrate concentrations.,numeric,column_header,-9999,0.000000001
-q_75_doc,milligrams per liter,The 75th quantile of dissolved organic carbon (DOC) concentrations.,numeric,column_header,-9999,1E-07
+q_75_doc,milligrams per liter,The 75th quantile of dissolved organic carbon (DOC) concentrations.,numeric,column_header,-9999,1.00E-07
 q_75_nitrate,milligrams per liter,The 75th quantile of nitrate concentrations.,numeric,column_header,-9999,0.000000001
-q_95_doc,milligrams per liter,The 95th quantile of dissolved organic carbon (DOC) concentrations.,numeric,column_header,-9999,1E-07
-q_95_nitrate,milligrams per liter,The 95th quantile of nitrate concentrations.,numeric,column_header,-9999,1E-07
+q_95_doc,milligrams per liter,The 95th quantile of dissolved organic carbon (DOC) concentrations.,numeric,column_header,-9999,1.00E-07
+q_95_nitrate,milligrams per liter,The 95th quantile of nitrate concentrations.,numeric,column_header,-9999,1.00E-07
 r2,N/A,The r-squared value for the line of best fit for area burned and the response variable.,numeric,column_header,-9999,0.00000001
 Reported_Precision,N/A,"Precision of the reported data values. For example, if the values are rounded to 1 decimal place, the precision would be 0.1. Similarly, if a value like 5.24 is reported (rounded to 2 decimal places), its precision would be 0.01.",numeric,column_header,N/A,-9999
 scenario,N/A,"The area burned scenario given as ""PER_*"" where the * is the percentage burned in the scenario.",text,column_header,N/A,-9999
 sd_doc_mgL,milligrams per liter,The standard deviation of dissolved organic carbon (DOC) concentrations.,numeric,column_header,-9999,0.00000001
 sd_nitrate_mgL,milligrams per liter,The standard deviation of nitrate concentrations.,numeric,column_header,-9999,0.00000001
-semi-arid,N/A,The calibrated parameter values for the semi-arid; mixed landuse basin.,numeric,column_header,-9999,1E-06
+semi-arid,N/A,The calibrated parameter values for the semi-arid; mixed landuse basin.,numeric,column_header,-9999,1.00E-06
 sev,N/A,The burn severity level (low; moderate; high).,text,column_header,N/A,-9999
 Standard,N/A,ESS-DIVE Reporting Format (https://ess-dive.lbl.gov/data-reporting-formats/) or other standard applied to the data file.,text,column_header,N/A,-9999
 SURQ,millimeters per year,The average depth of water contributing to streamflow from surface flow (SURQ).,numeric,column_header,-9999,0.000000001
-SURQ_PER,percent,The average percentage of water contributing to streamflow from surface flow (SURQ).,numeric,column_header,-9999,1E-10
+SURQ_PER,percent,The average percentage of water contributing to streamflow from surface flow (SURQ).,numeric,column_header,-9999,1.00E-10
 Term_Type,N/A,"Indicates how the term is used in the data package (e.g., a column_header, row_header, data_flag, or other variable).",text,column_header,N/A,-9999
-thresh,percent,The percentage of area burn required to cross the threshold of unburned variability. See manuscript for more details on how this was derived.,numeric,column_header,-9999,0.1
+thresh,percent,The percentage of area burn required to cross the threshold of unburned variability. See manuscript for more details on how this was derived.,numeric,column_header,NA,0.1
 Unit,N/A,Unit of measurement that applies to a given column or row in the data package.,text,column_header,N/A,-9999
 year,N/A,The year the precipitation records came from.,numeric,column_header,-9999,1
